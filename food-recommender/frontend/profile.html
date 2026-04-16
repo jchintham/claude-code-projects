@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crave — My Profile</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="app-shell">
+  <nav class="topbar">
+    <div class="topbar-brand">
+      <span class="icon">🍴</span>
+      <span>Crave<span style="color:var(--orange)">.</span></span>
+    </div>
+    <div class="topbar-nav">
+      <a href="/visited.html" class="btn btn-ghost">My restaurants</a>
+      <a href="/recommend.html" class="btn btn-ghost">Find restaurants</a>
+      <a href="/profile.html" class="btn btn-ghost active">Profile</a>
+      <button class="btn btn-ghost" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+  <main class="page-content">
+    <div id="setup-banner" style="display:none; background:var(--orange-light); border:1px solid var(--orange); border-radius:10px; padding:14px 18px; margin-bottom:20px; font-size:14px; color:#9a3412;">
+      Complete your profile so we can personalise your recommendations.
+    </div>
+
+    <h2 style="margin-bottom: 20px;">My Profile</h2>
+
+    <!-- Basic info -->
+    <div class="profile-section">
+      <h3>Account</h3>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="profile-name" placeholder="Your name" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="profile-email" disabled style="color:var(--text-muted)" />
+      </div>
+      <div class="form-group">
+        <label>Default party size</label>
+        <div class="stepper">
+          <button onclick="changeParty(-1)">−</button>
+          <span class="count" id="party-count">2</span>
+          <button onclick="changeParty(1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dietary restrictions -->
+    <div class="profile-section">
+      <h3>Dietary restrictions</h3>
+      <div class="chips" id="diet-chips">
+        <div class="chip" data-value="vegan">🌱 Vegan</div>
+        <div class="chip" data-value="vegetarian">🥦 Vegetarian</div>
+        <div class="chip" data-value="gluten-free">🌾 Gluten-free</div>
+        <div class="chip" data-value="dairy-free">🥛 Dairy-free</div>
+        <div class="chip" data-value="halal">☪️ Halal</div>
+        <div class="chip" data-value="kosher">✡️ Kosher</div>
+        <div class="chip" data-value="nut allergy">🥜 Nut allergy</div>
+        <div class="chip" data-value="shellfish allergy">🦐 Shellfish allergy</div>
+        <div class="chip" data-value="soy-free">Soy-free</div>
+        <div class="chip" data-value="low-carb">Low-carb</div>
+        <div class="chip" data-value="pescatarian">🐟 Pescatarian</div>
+        <div class="chip" data-value="keto">Keto</div>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Additional preferences <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div class="tag-input-area" id="notes-tag-area" style="flex:1;" onclick="document.getElementById('notes-input').focus()">
+            <!-- tags injected here -->
+            <input class="tag-input-field" id="notes-input" placeholder="e.g. light cheese only, no cilantro…" />
+          </div>
+          <button class="btn btn-outline btn-sm" type="button" onclick="addNoteTag()" style="flex-shrink:0;height:44px;">Add</button>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:5px;">Press Enter or click Add after each preference.</div>
+      </div>
+    </div>
+
+    <!-- Cuisine preferences -->
+    <div class="profile-section">
+      <h3>Cuisine preferences</h3>
+      <input type="text" id="cuisine-search" placeholder="Search cuisines…" style="margin-bottom:12px;" oninput="filterCuisines(this.value)" />
+      <div class="chips" id="cuisine-chips">
+        <div class="chip" data-value="Italian">🍝 Italian</div>
+        <div class="chip" data-value="Japanese">🍣 Japanese</div>
+        <div class="chip" data-value="Mexican">🌮 Mexican</div>
+        <div class="chip" data-value="Chinese">🥟 Chinese</div>
+        <div class="chip" data-value="Indian">🍛 Indian</div>
+        <div class="chip" data-value="Thai">🍜 Thai</div>
+        <div class="chip" data-value="American">🍔 American</div>
+        <div class="chip" data-value="Mediterranean">🫒 Mediterranean</div>
+        <div class="chip" data-value="Korean">🥩 Korean</div>
+        <div class="chip" data-value="French">🥐 French</div>
+        <div class="chip" data-value="Middle Eastern">🧆 Middle Eastern</div>
+        <div class="chip" data-value="Vietnamese">🍲 Vietnamese</div>
+        <div class="chip" data-value="Greek">🫕 Greek</div>
+        <div class="chip" data-value="Spanish">🥘 Spanish</div>
+        <div class="chip" data-value="Seafood">🦞 Seafood</div>
+        <div class="chip" data-value="Steakhouse">🥩 Steakhouse</div>
+        <div class="chip" data-value="Sushi">🍱 Sushi</div>
+        <div class="chip" data-value="Pizza">🍕 Pizza</div>
+        <div class="chip" data-value="Burgers">🍔 Burgers</div>
+        <div class="chip" data-value="BBQ">🔥 BBQ</div>
+        <div class="chip" data-value="Brunch">🥂 Brunch</div>
+        <div class="chip" data-value="Peruvian">🥑 Peruvian</div>
+        <div class="chip" data-value="Ethiopian">🍲 Ethiopian</div>
+        <div class="chip" data-value="Caribbean">🌴 Caribbean</div>
+        <div class="chip" data-value="Turkish">🥙 Turkish</div>
+        <div class="chip" data-value="Dim Sum">🥢 Dim Sum</div>
+        <div class="chip" data-value="Ramen">🍜 Ramen</div>
+        <div class="chip" data-value="Tapas">🫙 Tapas</div>
+        <div class="chip" data-value="Farm-to-table">🌿 Farm-to-table</div>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Don't see your cuisine? Add it:</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cuisine-custom" placeholder="e.g. Oaxacan, Georgian…" style="flex:1;" />
+          <button class="btn btn-outline" type="button" onclick="addCustomCuisine()">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn btn-primary" style="width:auto; padding: 11px 28px;" onclick="saveProfile()">Save changes</button>
+      <span id="save-status" style="font-size:13px; color:var(--text-muted);"></span>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('redirect');
+
+    let partySize = 2;
+
+    function changeParty(delta) {
+      partySize = Math.max(1, Math.min(12, partySize + delta));
+      document.getElementById('party-count').textContent = partySize;
+    }
+
+    function filterCuisines(query) {
+      const q = query.toLowerCase();
+      document.querySelectorAll('#cuisine-chips .chip').forEach(chip => {
+        chip.style.display = chip.dataset.value.toLowerCase().includes(q) ? '' : 'none';
+      });
+    }
+
+    function addCustomCuisine() {
+      const input = document.getElementById('cuisine-custom');
+      const val = input.value.trim();
+      if (!val) return;
+      const existing = [...document.querySelectorAll('#cuisine-chips .chip')]
+        .find(c => c.dataset.value.toLowerCase() === val.toLowerCase());
+      if (existing) {
+        existing.classList.add('selected');
+      } else {
+        const chip = document.createElement('div');
+        chip.className = 'chip selected';
+        chip.dataset.value = val;
+        chip.textContent = val;
+        chip.addEventListener('click', () => chip.classList.toggle('selected'));
+        document.getElementById('cuisine-chips').appendChild(chip);
+      }
+      input.value = '';
+      filterCuisines('');
+    }
+
+    function getSelected(id) {
+      return [...document.querySelectorAll(`#${id} .chip.selected`)].map(c => c.dataset.value);
+    }
+
+    function setSelected(id, values) {
+      // Mark known chips
+      document.querySelectorAll(`#${id} .chip`).forEach(chip => {
+        chip.classList.toggle('selected', values.includes(chip.dataset.value));
+      });
+      // Add custom chips that aren't in the default list
+      const knownValues = [...document.querySelectorAll(`#${id} .chip`)].map(c => c.dataset.value);
+      values.filter(v => !knownValues.includes(v)).forEach(v => {
+        const chip = document.createElement('div');
+        chip.className = 'chip selected';
+        chip.dataset.value = v;
+        chip.textContent = v;
+        chip.addEventListener('click', () => chip.classList.toggle('selected'));
+        document.getElementById(id).appendChild(chip);
+      });
+    }
+
+    // Chip toggle for default chips
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => chip.classList.toggle('selected'));
+    });
+
+    // ── Tag input for dietary notes ──
+    let dietaryNoteTags = [];
+
+    function renderNoteTags() {
+      const area = document.getElementById('notes-tag-area');
+      const input = document.getElementById('notes-input');
+      area.querySelectorAll('.tag-pill').forEach(p => p.remove());
+      dietaryNoteTags.forEach((tag, i) => {
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill';
+        pill.innerHTML = `${tag}<button type="button" aria-label="Remove" onclick="removeNoteTag(${i})">×</button>`;
+        area.insertBefore(pill, input);
+      });
+    }
+
+    function addNoteTag() {
+      const input = document.getElementById('notes-input');
+      const val = input.value.trim();
+      if (val && !dietaryNoteTags.includes(val)) {
+        dietaryNoteTags.push(val);
+        renderNoteTags();
+      }
+      input.value = '';
+    }
+
+    function removeNoteTag(i) {
+      dietaryNoteTags.splice(i, 1);
+      renderNoteTags();
+    }
+
+    document.getElementById('notes-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        addNoteTag();
+      }
+    });
+
+    async function loadProfile() {
+      try {
+        const user = await apiFetch('/users/profile');
+        document.getElementById('profile-name').value = user.name;
+        document.getElementById('profile-email').value = user.email;
+        // Handle both legacy string and new array format
+        const notes = user.dietary_notes;
+        dietaryNoteTags = Array.isArray(notes) ? notes : (notes ? [notes] : []);
+        renderNoteTags();
+        partySize = user.default_party_size || 2;
+        document.getElementById('party-count').textContent = partySize;
+        setSelected('diet-chips', user.dietary_restrictions);
+        setSelected('cuisine-chips', user.cuisine_preferences);
+      } catch (err) {
+        if (err.message.includes('token')) logout();
+      }
+    }
+
+    async function saveProfile() {
+      const statusEl = document.getElementById('save-status');
+      // Commit any pending input before saving
+      const pendingInput = document.getElementById('notes-input').value.trim();
+      if (pendingInput) { dietaryNoteTags.push(pendingInput); document.getElementById('notes-input').value = ''; renderNoteTags(); }
+      statusEl.textContent = 'Saving…';
+      try {
+        const updated = await apiFetch('/users/profile', {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: document.getElementById('profile-name').value,
+            dietary_restrictions: getSelected('diet-chips'),
+            dietary_notes: dietaryNoteTags,
+            cuisine_preferences: getSelected('cuisine-chips'),
+            default_party_size: partySize
+          })
+        });
+        localStorage.setItem('fr_name', updated.name);
+        statusEl.textContent = 'Saved!';
+        setTimeout(() => statusEl.textContent = '', 2000);
+
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('setup')) window.location.href = '/recommend.html';
+      } catch (err) {
+        statusEl.textContent = err.message;
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('setup')) document.getElementById('setup-banner').style.display = 'block';
+
+    loadProfile();
+  </script>
+</body>
+</html>

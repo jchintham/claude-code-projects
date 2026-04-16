@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crave — Find a Restaurant</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="app-shell">
+  <nav class="topbar">
+    <div class="topbar-brand">
+      <span class="icon">🍴</span>
+      <span>Crave<span style="color:var(--orange)">.</span></span>
+    </div>
+    <div class="topbar-nav">
+      <a href="/recommend.html" class="btn btn-ghost active">Find restaurants</a>
+      <a href="/visited.html" class="btn btn-ghost">My restaurants</a>
+      <a href="/profile.html" class="btn btn-ghost" id="greeting"></a>
+      <button class="btn btn-ghost" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+  <main class="page-content">
+
+    <!-- ── Follow-up (shown on return visit) ── -->
+    <div id="followup-state" style="display:none;">
+      <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:24px;">
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;">Welcome back!</h3>
+        <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Last time we recommended these places — did you end up visiting any of them?</p>
+        <div id="followup-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;"></div>
+        <button class="btn btn-ghost" onclick="skipFollowUp()">Skip</button>
+      </div>
+    </div>
+
+    <!-- ── Questionnaire ── -->
+    <div id="questionnaire">
+      <h2 style="margin-bottom:6px;">What are you feeling?</h2>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">Answer a few quick questions and we'll find the right spot.</p>
+
+      <!-- Q1: Meal type -->
+      <div class="question-card">
+        <h3>1. What meal is this?</h3>
+        <div class="option-grid" id="meal-options">
+          <button class="option-btn" data-value="breakfast"><span class="emoji">🌅</span>Breakfast</button>
+          <button class="option-btn" data-value="brunch"><span class="emoji">🥞</span>Brunch</button>
+          <button class="option-btn" data-value="lunch"><span class="emoji">☀️</span>Lunch</button>
+          <button class="option-btn" data-value="dinner"><span class="emoji">🌙</span>Dinner</button>
+          <button class="option-btn" data-value="late night"><span class="emoji">🦉</span>Late night</button>
+          <button class="option-btn" data-value="coffee or snack"><span class="emoji">☕</span>Coffee / snack</button>
+          <button class="option-btn" data-value="happy hour"><span class="emoji">🍹</span>Happy hour</button>
+          <button class="option-btn" data-value="dessert"><span class="emoji">🍰</span>Dessert</button>
+        </div>
+      </div>
+
+      <!-- Q2: Vibe -->
+      <div class="question-card">
+        <h3>2. What's the vibe?</h3>
+        <div class="option-grid" id="vibe-options">
+          <button class="option-btn" data-value="quick bite"><span class="emoji">⚡</span>Quick bite</button>
+          <button class="option-btn" data-value="casual"><span class="emoji">😎</span>Casual</button>
+          <button class="option-btn" data-value="date night"><span class="emoji">❤️</span>Date night</button>
+          <button class="option-btn" data-value="business"><span class="emoji">💼</span>Business</button>
+          <button class="option-btn" data-value="group / social"><span class="emoji">🥳</span>Group / social</button>
+          <button class="option-btn" data-value="special occasion"><span class="emoji">🎉</span>Special occasion</button>
+          <button class="option-btn" data-value="family-friendly"><span class="emoji">👨‍👩‍👧</span>Family-friendly</button>
+          <button class="option-btn" data-value="outdoor seating"><span class="emoji">🌿</span>Outdoor seating</button>
+          <button class="option-btn" data-value="solo or work"><span class="emoji">💻</span>Solo / work</button>
+          <button class="option-btn" data-value="trendy new spot"><span class="emoji">✨</span>Trendy / new</button>
+        </div>
+      </div>
+
+      <!-- Q3: Distance -->
+      <div class="question-card">
+        <h3>3. How far are you willing to go?</h3>
+        <div class="option-grid" id="distance-options">
+          <button class="option-btn" data-value="under_1"><span class="emoji">🚶</span>Under 1 mile</button>
+          <button class="option-btn" data-value="1_to_2.5"><span class="emoji">🚗</span>1 to 2.5 miles</button>
+          <button class="option-btn" data-value="2.5_to_10"><span class="emoji">🗺️</span>2.5 to 10 miles</button>
+          <button class="option-btn" data-value="10_to_50"><span class="emoji">✈️</span>10 to 50 miles</button>
+        </div>
+      </div>
+
+      <!-- Q4: Craving -->
+      <div class="question-card">
+        <h3>4. Anything specific you're craving? <span style="font-weight:400;color:var(--text-muted)">(optional)</span></h3>
+        <input type="text" id="craving-input" placeholder="e.g. spicy ramen, wood-fired pizza, tacos, seafood pasta…" style="max-width:460px;" />
+      </div>
+
+      <!-- Location -->
+      <div class="location-picker">
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:14px;">📍 Your location</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-outline btn-sm" onclick="useGeolocation()">Use my current location</button>
+          <span style="align-self:center;color:var(--text-muted);font-size:13px;">or enter manually</span>
+        </div>
+        <div class="location-row" style="position:relative;">
+          <input type="text" id="location-input" placeholder="Neighbourhood, city, or address…" autocomplete="off" />
+          <div id="location-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:300;margin-top:4px;max-height:220px;overflow-y:auto;"></div>
+        </div>
+        <p class="location-status" id="location-status"></p>
+      </div>
+
+      <!-- Party size -->
+      <div class="question-card">
+        <h3>Party size</h3>
+        <div class="stepper">
+          <button onclick="changeParty(-1)">−</button>
+          <span class="count" id="party-count">2</span>
+          <button onclick="changeParty(1)">+</button>
+          <span style="font-size:13px;color:var(--text-muted)">people</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width:auto;padding:13px 36px;font-size:16px;" onclick="getRecommendations()">
+        Find restaurants
+      </button>
+      <p class="error-msg" id="form-error"></p>
+    </div>
+
+    <!-- ── Loading ── -->
+    <div id="loading-state" style="display:none;">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Finding the best spots for you…</p>
+        <p style="font-size:12px;margin-top:8px;color:#a8a29e;">Summarising reviews with AI — this takes ~20 seconds</p>
+      </div>
+    </div>
+
+    <!-- ── Results ── -->
+    <div id="results-state" style="display:none;">
+      <div class="results-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 id="results-title">Here are your picks</h2>
+            <p id="results-subtitle" style="color:var(--text-muted);font-size:14px;margin-top:4px;"></p>
+          </div>
+          <button class="btn btn-outline" onclick="reset()">Start over</button>
+        </div>
+      </div>
+      <div id="results-list"></div>
+    </div>
+
+  </main>
+
+  <!-- ── "I've been here" modal ── -->
+  <div id="visited-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:28px;width:100%;max-width:460px;">
+      <h3 style="margin-bottom:4px;" id="visited-modal-name"></h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;" id="visited-modal-address"></p>
+
+      <div class="form-group">
+        <label>Your rating <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <div id="modal-star-picker" style="display:flex;gap:6px;font-size:28px;cursor:pointer;">
+          <span data-val="1">☆</span>
+          <span data-val="2">☆</span>
+          <span data-val="3">☆</span>
+          <span data-val="4">☆</span>
+          <span data-val="5">☆</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Would you go back?</label>
+        <div style="display:flex;gap:10px;margin-top:6px;">
+          <button class="btn btn-outline btn-sm" id="modal-return-yes" onclick="setModalReturn(true)">Yes</button>
+          <button class="btn btn-outline btn-sm" id="modal-return-no" onclick="setModalReturn(false)">No</button>
+          <button class="btn btn-ghost btn-sm" id="modal-return-null" onclick="setModalReturn(null)">Not sure</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <input type="text" id="modal-notes" placeholder="Favourite dish, occasion, who you went with…" />
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="saveVisitedModal()">Save</button>
+        <button class="btn btn-outline" onclick="hideVisitedModal()">Cancel</button>
+      </div>
+      <p class="error-msg" id="modal-save-error"></p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error('redirect');
+
+    document.getElementById('greeting').textContent = `Hi, ${getUserName()}`;
+
+    // ── Post-session follow-up ──
+    function checkFollowUp() {
+      if (sessionStorage.getItem('fr_followup_done')) return;
+      const raw = localStorage.getItem('fr_last_recs');
+      if (!raw) return;
+      const { saved_at, restaurants } = JSON.parse(raw);
+      if (!restaurants?.length) return;
+      const hoursSince = (Date.now() - new Date(saved_at)) / 3600000;
+      if (hoursSince < 1) return;
+
+      const list = document.getElementById('followup-list');
+      list.innerHTML = restaurants.map((r, i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;">
+          <div>
+            <div style="font-weight:600;font-size:15px;">${r.name}</div>
+            ${r.address ? `<div style="font-size:12px;color:var(--text-muted);">${r.address}</div>` : ''}
+          </div>
+          <button class="btn btn-outline btn-sm" id="fu-btn-${i}" onclick="logFollowUpVisit(${i})">Yes, I went!</button>
+        </div>
+      `).join('');
+      list._restaurants = restaurants;
+      document.getElementById('followup-state').style.display = 'block';
+      document.getElementById('questionnaire').style.display = 'none';
+    }
+
+    async function logFollowUpVisit(i) {
+      const r = document.getElementById('followup-list')._restaurants?.[i];
+      if (!r) return;
+      try {
+        await apiFetch('/visited', {
+          method: 'POST',
+          body: JSON.stringify({ place_id: r.place_id, name: r.name, address: r.address })
+        });
+        const btn = document.getElementById(`fu-btn-${i}`);
+        if (btn) { btn.textContent = '✓ Logged'; btn.disabled = true; btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)'; }
+      } catch {}
+    }
+
+    function skipFollowUp() {
+      sessionStorage.setItem('fr_followup_done', '1');
+      localStorage.removeItem('fr_last_recs');
+      document.getElementById('followup-state').style.display = 'none';
+      document.getElementById('questionnaire').style.display = 'block';
+    }
+
+    // ── Session result persistence ──
+    function saveResultsToSession(restaurants, title, subtitle) {
+      sessionStorage.setItem('fr_session_results', JSON.stringify({ restaurants, title, subtitle }));
+    }
+
+    function restoreSessionResults() {
+      const raw = sessionStorage.getItem('fr_session_results');
+      if (!raw) return false;
+      try {
+        const { restaurants, title, subtitle } = JSON.parse(raw);
+        if (!restaurants?.length) return false;
+        document.getElementById('questionnaire').style.display = 'none';
+        document.getElementById('results-title').textContent = title || 'Here are your picks';
+        document.getElementById('results-subtitle').textContent = subtitle || '';
+        renderResults(restaurants);
+        document.getElementById('results-state').style.display = 'block';
+        return true;
+      } catch { return false; }
+    }
+
+    checkFollowUp();
+    if (!sessionStorage.getItem('fr_followup_done')) {
+      restoreSessionResults();
+    }
+
+    // ── Party size ──
+    let partySize = 2;
+
+    function changeParty(d) {
+      partySize = Math.max(1, Math.min(12, partySize + d));
+      document.getElementById('party-count').textContent = partySize;
+    }
+
+    apiFetch('/users/profile').then(u => {
+      partySize = u.default_party_size || 2;
+      document.getElementById('party-count').textContent = partySize;
+    }).catch(() => {});
+
+    // ── Option buttons ──
+    document.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.closest('.option-grid').querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
+
+    function getSelection(groupId) {
+      const sel = document.querySelector(`#${groupId} .option-btn.selected`);
+      return sel ? sel.dataset.value : null;
+    }
+
+    // ── Geolocation ──
+    let locationData = null;
+
+    function useGeolocation() {
+      const status = document.getElementById('location-status');
+      status.className = 'location-status';
+      status.textContent = 'Requesting location…';
+
+      if (!navigator.geolocation) {
+        status.className = 'location-status err';
+        status.textContent = 'Geolocation is not supported by your browser.';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          locationData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          document.getElementById('location-input').value = '';
+          document.getElementById('location-input').placeholder = 'Using your current location';
+          status.className = 'location-status ok';
+          status.textContent = 'Current location detected.';
+        },
+        () => {
+          status.className = 'location-status err';
+          status.textContent = 'Could not get location. Please enter it manually.';
+          locationData = null;
+        }
+      );
+    }
+
+    // ── Location autocomplete ──
+    let locationTimer = null;
+
+    (function initLocationAutocomplete() {
+      const input = document.getElementById('location-input');
+      const dropdown = document.getElementById('location-dropdown');
+
+      input.addEventListener('input', () => {
+        locationData = null; // clear GPS if user is typing
+        clearTimeout(locationTimer);
+        const val = input.value.trim();
+        if (val.length < 2) { dropdown.style.display = 'none'; return; }
+
+        locationTimer = setTimeout(async () => {
+          try {
+            const results = await apiFetch(`/autocomplete?input=${encodeURIComponent(val)}&type=location`);
+            if (!results.length) { dropdown.style.display = 'none'; return; }
+
+            dropdown.innerHTML = results.map((r, i) => `
+              <div data-index="${i}" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;"
+                onmousedown="selectLocationSuggestion(${i})"
+                onmouseenter="this.style.background='var(--card)'"
+                onmouseleave="this.style.background=''">
+                <div style="font-weight:600;color:var(--text);">${r.name}</div>
+                ${r.address ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${r.address}</div>` : ''}
+              </div>
+            `).join('');
+            dropdown._suggestions = results;
+            dropdown.style.display = 'block';
+          } catch { dropdown.style.display = 'none'; }
+        }, 300);
+      });
+
+      input.addEventListener('blur', () => {
+        setTimeout(() => { dropdown.style.display = 'none'; }, 150);
+      });
+    })();
+
+    function selectLocationSuggestion(index) {
+      const dropdown = document.getElementById('location-dropdown');
+      const suggestion = dropdown._suggestions?.[index];
+      if (!suggestion) return;
+      const fullAddress = suggestion.name + (suggestion.address ? ', ' + suggestion.address : '');
+      document.getElementById('location-input').value = fullAddress;
+      document.getElementById('location-status').textContent = '';
+      locationData = null; // will be geocoded on the backend
+      dropdown.style.display = 'none';
+    }
+
+    // ── Get recommendations ──
+    async function getRecommendations() {
+      const errorEl = document.getElementById('form-error');
+      errorEl.textContent = '';
+
+      const meal_type = getSelection('meal-options');
+      const vibe = getSelection('vibe-options');
+      const distance = getSelection('distance-options');
+      const craving = document.getElementById('craving-input').value.trim();
+      const manualLocation = document.getElementById('location-input').value.trim();
+
+      if (!meal_type) return (errorEl.textContent = 'Please select a meal type.');
+      if (!vibe) return (errorEl.textContent = 'Please select a vibe.');
+      if (!distance) return (errorEl.textContent = 'Please select a distance.');
+      if (!locationData && !manualLocation) return (errorEl.textContent = 'Please enter your location or use current location.');
+
+      const location = locationData || { address: manualLocation };
+
+      document.getElementById('questionnaire').style.display = 'none';
+      document.getElementById('loading-state').style.display = 'block';
+
+      try {
+        const data = await apiFetch('/restaurants/recommend', {
+          method: 'POST',
+          body: JSON.stringify({ meal_type, vibe, distance, craving, location, party_size: partySize })
+        });
+
+        document.getElementById('loading-state').style.display = 'none';
+
+        if (data.restaurants?.length) {
+          localStorage.setItem('fr_last_recs', JSON.stringify({
+            saved_at: new Date().toISOString(),
+            restaurants: data.restaurants.map(r => ({ place_id: r.place_id, name: r.name, address: r.address }))
+          }));
+          sessionStorage.setItem('fr_followup_done', '1');
+        }
+
+        const loc = manualLocation || 'your area';
+        const title = data.restaurants.length ? 'Here are your picks' : 'No results found';
+        const subtitle = data.restaurants.length
+          ? `${data.restaurants.length} picks for ${meal_type} · ${vibe} · ${loc}`
+          : 'Try adjusting your distance or search criteria.';
+
+        document.getElementById('results-title').textContent = title;
+        document.getElementById('results-subtitle').textContent = subtitle;
+
+        if (!data.restaurants.length) {
+          document.getElementById('results-list').innerHTML = `
+            <div class="empty-state">
+              <div class="icon">🍽️</div>
+              <h3>No restaurants found</h3>
+              <p>Try increasing your distance or changing the criteria.</p>
+            </div>`;
+        } else {
+          renderResults(data.restaurants);
+          saveResultsToSession(data.restaurants, title, subtitle);
+        }
+
+        document.getElementById('results-state').style.display = 'block';
+      } catch (err) {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('questionnaire').style.display = 'block';
+        errorEl.textContent = err.message;
+      }
+    }
+
+    function reset() {
+      locationData = null;
+      sessionStorage.removeItem('fr_session_results');
+      document.getElementById('location-input').value = '';
+      document.getElementById('location-input').placeholder = 'Neighbourhood, city, or address…';
+      document.getElementById('location-status').textContent = '';
+      document.getElementById('craving-input').value = '';
+      document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById('results-state').style.display = 'none';
+      document.getElementById('results-list').innerHTML = '';
+      document.getElementById('questionnaire').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function stars(rating) {
+      if (!rating) return '';
+      const full = Math.round(rating);
+      return '★'.repeat(full) + '☆'.repeat(5 - full);
+    }
+
+    function priceLabel(level) {
+      return level ? '$'.repeat(level) : '';
+    }
+
+    // ── "I've been here" modal ──
+    let resultRestaurants = [];
+    let modalRating = null;
+    let modalReturn = null;
+    let modalIndex = null;
+
+    const modalStars = document.querySelectorAll('#modal-star-picker span');
+    modalStars.forEach(s => {
+      s.addEventListener('click', () => {
+        modalRating = parseInt(s.dataset.val);
+        modalStars.forEach((sp, i) => sp.textContent = i < modalRating ? '★' : '☆');
+      });
+    });
+
+    function setModalReturn(val) {
+      modalReturn = val;
+      document.getElementById('modal-return-yes').style.cssText = val === true ? 'background:var(--orange);color:white;border-color:var(--orange);' : '';
+      document.getElementById('modal-return-no').style.cssText = val === false ? 'background:var(--orange);color:white;border-color:var(--orange);' : '';
+      document.getElementById('modal-return-null').style.cssText = val === null ? 'background:var(--border);' : '';
+    }
+
+    function openVisitedModal(index) {
+      const r = resultRestaurants[index];
+      if (!r) return;
+      modalIndex = index;
+      modalRating = null;
+      modalReturn = null;
+      document.getElementById('visited-modal-name').textContent = r.name;
+      document.getElementById('visited-modal-address').textContent = r.address || '';
+      document.getElementById('modal-notes').value = '';
+      document.getElementById('modal-save-error').textContent = '';
+      modalStars.forEach(sp => sp.textContent = '☆');
+      document.getElementById('modal-return-yes').style.cssText = '';
+      document.getElementById('modal-return-no').style.cssText = '';
+      document.getElementById('modal-return-null').style.cssText = '';
+      document.getElementById('visited-modal-overlay').style.display = 'flex';
+    }
+
+    function hideVisitedModal() {
+      document.getElementById('visited-modal-overlay').style.display = 'none';
+      modalIndex = null;
+    }
+
+    async function saveVisitedModal() {
+      const r = resultRestaurants[modalIndex];
+      if (!r) return;
+      const errorEl = document.getElementById('modal-save-error');
+      try {
+        await apiFetch('/visited', {
+          method: 'POST',
+          body: JSON.stringify({
+            place_id: r.place_id,
+            name: r.name,
+            address: r.address,
+            rating: modalRating,
+            notes: document.getElementById('modal-notes').value.trim(),
+            would_return: modalReturn
+          })
+        });
+        hideVisitedModal();
+        // Mark the button as done
+        const btn = document.getElementById(`visited-btn-${modalIndex}`);
+        if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; btn.style.color = 'var(--green)'; }
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    }
+
+    document.getElementById('visited-modal-overlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideVisitedModal();
+    });
+
+    function toggleDietaryMore(i) {
+      const more = document.getElementById(`dietary-more-${i}`);
+      const btn = document.getElementById(`dietary-more-btn-${i}`);
+      if (!more) return;
+      const hidden = more.style.display === 'none';
+      more.style.display = hidden ? 'flex' : 'none';
+      if (btn) btn.textContent = hidden ? 'See less' : 'See more';
+    }
+
+    // ── Render results ──
+    function renderResults(restaurants) {
+      resultRestaurants = restaurants;
+      const list = document.getElementById('results-list');
+      list.innerHTML = restaurants.map((r, i) => {
+        const reservationBtn = r.reservation
+          ? `<a href="${r.reservation.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${r.reservation.label}</a>`
+          : r.phone
+            ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
+            : '';
+
+        const yelpRating = r.yelp_rating
+          ? `<span style="color:#d32323;font-weight:600;">· Yelp ${r.yelp_rating}</span>`
+          : '';
+
+        const dietaryDishesHtml = r.dietary_dishes?.length ? `
+          <div style="margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:600;color:#4ade80;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🥗 Dietary options for you</div>
+            <div class="highlights" style="display:flex;flex-wrap:wrap;gap:6px;">
+              ${r.dietary_dishes.slice(0, 5).map(d => `<span class="chip" style="cursor:default;border-color:#1a3a20;color:#4ade80;background:#071510;">${d}</span>`).join('')}
+            </div>
+            ${r.dietary_dishes.length > 5 ? `
+              <div id="dietary-more-${i}" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px;">
+                ${r.dietary_dishes.slice(5).map(d => `<span class="chip" style="cursor:default;border-color:#1a3a20;color:#4ade80;background:#071510;">${d}</span>`).join('')}
+              </div>
+              <button id="dietary-more-btn-${i}" class="btn btn-ghost btn-sm" style="margin-top:6px;padding:4px 8px;font-size:12px;color:var(--green);" onclick="toggleDietaryMore(${i})">See more</button>
+            ` : ''}
+          </div>` : '';
+
+        return `
+        <div class="restaurant-card">
+          ${r.photos?.length ? `
+            <div class="photo-strip">
+              ${r.photos.map(url => `<img src="${url}" alt="${r.name}" loading="lazy" onerror="this.style.display='none'" />`).join('')}
+            </div>` : `<div class="photo-placeholder">🍽️</div>`}
+
+          <div class="card-body">
+            <div class="card-header">
+              <div style="flex:1;">
+                <div class="card-title">${r.name}</div>
+                <div class="card-meta">
+                  ${r.rating ? `<span class="stars">${stars(r.rating)}</span> <strong>${r.rating}</strong>` : ''}
+                  ${yelpRating}
+                  ${r.user_ratings_total ? `<span>(${r.user_ratings_total.toLocaleString()} reviews)</span>` : ''}
+                  ${r.price_level ? `<span>${priceLabel(r.price_level)}</span>` : ''}
+                  ${r.is_open_now === true ? `<span class="badge badge-green">Open now</span>` : r.is_open_now === false ? `<span class="badge badge-gray">Closed</span>` : ''}
+                </div>
+                <div class="card-meta" style="margin-top:4px;">
+                  <span>📍 ${r.address}</span>
+                </div>
+              </div>
+            </div>
+
+            ${r.summary ? `<p class="summary">${r.summary}</p>` : ''}
+
+            ${r.popular_dishes?.length ? `
+              <div style="margin-bottom:14px;">
+                <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Popular dishes</div>
+                <div class="highlights">
+                  ${r.popular_dishes.map(d => `<span class="chip selected" style="cursor:default;">${d}</span>`).join('')}
+                </div>
+              </div>` : ''}
+
+            ${dietaryDishesHtml}
+
+            ${r.dietary_notes ? `
+              <div class="dietary-note">
+                <span>🥗</span>
+                <span>${r.dietary_notes}</span>
+              </div>` : ''}
+
+            <div class="card-actions">
+              ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
+              <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🗺️ Google Maps</a>
+              ${reservationBtn}
+              <button id="visited-btn-${i}" class="btn btn-ghost btn-sm" onclick="openVisitedModal(${i})">+ I've been here</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
