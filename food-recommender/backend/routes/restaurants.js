@@ -65,81 +65,90 @@ router.post('/recommend', requireAuth, async (req, res) => {
     const seats = party_size || userRow.default_party_size || 2;
     const date = date_time ? date_time.split('T')[0] : new Date().toISOString().split('T')[0];
 
-    // Enrich top 20 candidates in parallel
-    const enriched = await Promise.all(
-      candidates.slice(0, 20).map(async (place) => {
-        try {
-          const details = await getPlaceDetails(place.place_id);
+    // Enrich top 20 candidates with limited concurrency (5 at a time)
+    // to avoid hitting Claude's concurrent-connection rate limit
+    async function enrichWithLimit(places, limit) {
+      const results = [];
+      for (let i = 0; i < places.length; i += limit) {
+        const batch = await Promise.all(places.slice(i, i + limit).map(enrichPlace));
+        results.push(...batch);
+      }
+      return results;
+    }
 
-          // Yelp cross-reference + menu scraping (run in parallel)
-          const [yelpBiz, menuText] = await Promise.all([
-            matchYelpBusiness(details.name, coords.lat, coords.lng),
-            fetchMenuText(details.website)
-          ]);
-          const yelpReviews = yelpBiz ? await getReviews(yelpBiz.id) : [];
+    async function enrichPlace(place) {
+      try {
+        const details = await getPlaceDetails(place.place_id);
 
-          // Merge reviews
-          const allReviews = [
-            ...(details.reviews || []).map(r => ({ text: r.text, rating: r.rating })),
-            ...yelpReviews.map(r => ({ text: r.text, rating: r.rating }))
-          ];
+        // Yelp cross-reference + menu scraping (run in parallel)
+        const [yelpBiz, menuText] = await Promise.all([
+          matchYelpBusiness(details.name, coords.lat, coords.lng),
+          fetchMenuText(details.website)
+        ]);
+        const yelpReviews = yelpBiz ? await getReviews(yelpBiz.id) : [];
 
-          const restaurantData = {
-            ...details,
-            reviews: allReviews,
-            yelp_rating: yelpBiz?.rating || null
-          };
+        // Merge reviews
+        const allReviews = [
+          ...(details.reviews || []).map(r => ({ text: r.text, rating: r.rating })),
+          ...yelpReviews.map(r => ({ text: r.text, rating: r.rating }))
+        ];
 
-          const session = { meal_type, vibe, craving, party_size: seats };
-          const ai = await summarizeAndScore(restaurantData, session, userProfile, visitedHistory, menuText);
+        const restaurantData = {
+          ...details,
+          reviews: allReviews,
+          yelp_rating: yelpBiz?.rating || null
+        };
 
-          // Extract city for reservation links
-          const cityMatch = (details.formatted_address || '').match(/,\s*([^,]+),\s*[A-Z]{2}/);
-          const city = cityMatch?.[1]?.trim() || '';
+        const session = { meal_type, vibe, craving, party_size: seats };
+        const ai = await summarizeAndScore(restaurantData, session, userProfile, visitedHistory, menuText);
 
-          // Determine reservation platform from website URL
-          const platform = detectReservationPlatform(null, details.website);
+        // Extract city for reservation links
+        const cityMatch = (details.formatted_address || '').match(/,\s*([^,]+),\s*[A-Z]{2}/);
+        const city = cityMatch?.[1]?.trim() || '';
 
-          let reservation = null;
-          if (platform === 'opentable') {
-            reservation = { type: 'opentable', url: getOpenTableLink(details.name, city, date_time, seats), label: 'Reserve on OpenTable' };
-          } else if (platform === 'resy') {
-            reservation = { type: 'resy', url: getResyLink(details.name, city, date, seats), label: 'Reserve on Resy' };
-          } else if (platform === 'tock') {
-            reservation = { type: 'tock', url: details.website, label: 'Reserve on Tock' };
-          } else if (platform === 'yelp') {
-            reservation = { type: 'yelp', url: details.website, label: 'Reserve on Yelp' };
-          }
-          // If no platform detected, reservation stays null — frontend shows phone number only
+        // Determine reservation platform from website URL
+        const platform = detectReservationPlatform(null, details.website);
 
-          const photos = (details.photos || []).slice(0, 5).map(p => getPhotoUrl(p.photo_reference));
-
-          return {
-            place_id: place.place_id,
-            name: details.name,
-            address: details.formatted_address || '',
-            phone: details.formatted_phone_number || null,
-            rating: details.rating || null,
-            yelp_rating: yelpBiz?.rating || null,
-            user_ratings_total: details.user_ratings_total || 0,
-            price_level: details.price_level || null,
-            website: details.website || null,
-            google_maps_url: details.url || getGoogleMapsLink(details.name, details.formatted_address),
-            is_open_now: details.opening_hours?.open_now ?? null,
-            photos,
-            summary: ai.summary,
-            popular_dishes: ai.popular_dishes || [],
-            dietary_dishes: ai.dietary_dishes || [],
-            dietary_notes: ai.dietary_notes || null,
-            reservation
-          };
-        } catch (err) {
-          console.error(`Skipping ${place.name}:`, err.message);
-          return null;
+        let reservation = null;
+        if (platform === 'opentable') {
+          reservation = { type: 'opentable', url: getOpenTableLink(details.name, city, date_time, seats), label: 'Reserve on OpenTable' };
+        } else if (platform === 'resy') {
+          reservation = { type: 'resy', url: getResyLink(details.name, city, date, seats), label: 'Reserve on Resy' };
+        } else if (platform === 'tock') {
+          reservation = { type: 'tock', url: details.website, label: 'Reserve on Tock' };
+        } else if (platform === 'yelp') {
+          reservation = { type: 'yelp', url: details.website, label: 'Reserve on Yelp' };
         }
-      })
-    );
+        // If no platform detected, reservation stays null — frontend shows phone number only
 
+        const photos = (details.photos || []).slice(0, 5).map(p => getPhotoUrl(p.photo_reference));
+
+        return {
+          place_id: place.place_id,
+          name: details.name,
+          address: details.formatted_address || '',
+          phone: details.formatted_phone_number || null,
+          rating: details.rating || null,
+          yelp_rating: yelpBiz?.rating || null,
+          user_ratings_total: details.user_ratings_total || 0,
+          price_level: details.price_level || null,
+          website: details.website || null,
+          google_maps_url: details.url || getGoogleMapsLink(details.name, details.formatted_address),
+          is_open_now: details.opening_hours?.open_now ?? null,
+          photos,
+          summary: ai.summary,
+          popular_dishes: ai.popular_dishes || [],
+          dietary_dishes: ai.dietary_dishes || [],
+          dietary_notes: ai.dietary_notes || null,
+          reservation
+        };
+      } catch (err) {
+        console.error(`Skipping ${place.name}:`, err.message);
+        return null;
+      }
+    }
+
+    const enriched = await enrichWithLimit(candidates.slice(0, 20), 5);
     const results = enriched.filter(Boolean).slice(0, 20);
     res.json({ restaurants: results });
   } catch (err) {
