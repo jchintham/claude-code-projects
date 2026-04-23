@@ -10,9 +10,9 @@ const router = express.Router();
 
 const RADIUS_MAP = {
   under_1:   1600,
-  '1_to_2.5': 4000,
-  '2.5_to_10': 16000,
-  '10_to_50':  80000
+  under_2_5: 4000,
+  under_10:  16000,
+  under_50:  80000
 };
 
 function detectReservationPlatform(reservationsUrl, website) {
@@ -47,7 +47,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
       coords = await geocodeAddress(location.address);
     }
 
-    const radius = RADIUS_MAP[distance] || RADIUS_MAP.nearby;
+    const radius = RADIUS_MAP[distance] || RADIUS_MAP.under_2_5;
 
     // Strip vague/non-specific cravings before using as a Google search term
     const vagueTerms = ['surprise me', 'anything', 'whatever', 'any', 'random', 'surprise', 'anything goes', 'no preference'];
@@ -63,9 +63,9 @@ router.post('/recommend', requireAuth, async (req, res) => {
     const seats = party_size || userRow.default_party_size || 2;
     const date = date_time ? date_time.split('T')[0] : new Date().toISOString().split('T')[0];
 
-    // Enrich top 8 candidates in parallel
+    // Enrich top 20 candidates in parallel
     const enriched = await Promise.all(
-      candidates.slice(0, 8).map(async (place) => {
+      candidates.slice(0, 20).map(async (place) => {
         try {
           const details = await getPlaceDetails(place.place_id);
 
@@ -135,7 +135,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
       })
     );
 
-    const results = enriched.filter(Boolean).slice(0, 5);
+    const results = enriched.filter(Boolean).slice(0, 20);
     res.json({ restaurants: results });
   } catch (err) {
     console.error('Recommend error:', err.message);

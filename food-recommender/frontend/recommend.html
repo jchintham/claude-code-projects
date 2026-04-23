@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crave — Find a Restaurant</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.5); }
+      50% { box-shadow: 0 0 0 18px rgba(249,115,22,0); }
+    }
+    .voice-pulse-btn { animation: voicePulse 1.4s ease-out infinite; }
+  </style>
 </head>
 <body class="app-shell">
   <nav class="topbar">
@@ -22,7 +29,7 @@
 
   <main class="page-content">
 
-    <!-- ── Follow-up (shown on return visit) ── -->
+    <!-- ── Follow-up ── -->
     <div id="followup-state" style="display:none;">
       <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:24px;">
         <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;">Welcome back!</h3>
@@ -35,7 +42,37 @@
     <!-- ── Questionnaire ── -->
     <div id="questionnaire">
       <h2 style="margin-bottom:6px;">What are you feeling?</h2>
-      <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">Answer a few quick questions and we'll find the right spot.</p>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px;">Speak your order or fill in below.</p>
+
+      <!-- Voice section -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;text-align:center;">
+        <!-- Default -->
+        <div id="voice-default">
+          <button onclick="startVoice()" style="display:inline-flex;align-items:center;gap:10px;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;">
+            <span style="font-size:22px;">🎤</span> Speak your order
+          </button>
+          <p style="color:var(--text-muted);font-size:13px;margin-top:10px;">Say your meal, vibe, distance, location and craving all at once</p>
+          <p style="color:var(--text-muted);font-size:12px;margin-top:4px;opacity:0.5;">— or fill in below —</p>
+        </div>
+        <!-- Listening -->
+        <div id="voice-listening" style="display:none;">
+          <button onclick="stopVoice()" class="voice-pulse-btn" style="width:72px;height:72px;border-radius:50%;background:var(--orange);border:none;font-size:30px;cursor:pointer;">🎤</button>
+          <p style="font-size:16px;font-weight:600;margin-top:14px;">Listening…</p>
+          <p style="font-size:13px;color:var(--text-muted);">Speak now, then pause. Tap to stop early.</p>
+        </div>
+        <!-- Result -->
+        <div id="voice-result" style="display:none;">
+          <div style="background:var(--orange-light);border:1px solid #3d1f00;border-radius:10px;padding:14px 18px;text-align:left;">
+            <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">✓ Selections updated — review below</div>
+            <div id="voice-transcript" style="font-size:12px;color:var(--text-muted);font-style:italic;"></div>
+          </div>
+          <button onclick="resetVoice()" style="margin-top:12px;background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;text-decoration:underline;">🎤 Try again</button>
+        </div>
+        <!-- Unsupported -->
+        <div id="voice-unsupported" style="display:none;">
+          <p style="color:var(--text-muted);font-size:13px;">Voice input requires Chrome or Edge. Please fill in below.</p>
+        </div>
+      </div>
 
       <!-- Q1: Meal type -->
       <div class="question-card">
@@ -74,9 +111,9 @@
         <h3>3. How far are you willing to go?</h3>
         <div class="option-grid" id="distance-options">
           <button class="option-btn" data-value="under_1"><span class="emoji">🚶</span>Under 1 mile</button>
-          <button class="option-btn" data-value="1_to_2.5"><span class="emoji">🚗</span>1 to 2.5 miles</button>
-          <button class="option-btn" data-value="2.5_to_10"><span class="emoji">🗺️</span>2.5 to 10 miles</button>
-          <button class="option-btn" data-value="10_to_50"><span class="emoji">✈️</span>10 to 50 miles</button>
+          <button class="option-btn" data-value="under_2_5"><span class="emoji">🚗</span>Under 2.5 miles</button>
+          <button class="option-btn" data-value="under_10"><span class="emoji">🗺️</span>Under 10 miles</button>
+          <button class="option-btn" data-value="under_50"><span class="emoji">✈️</span>Under 50 miles</button>
         </div>
       </div>
 
@@ -115,6 +152,16 @@
         Find restaurants
       </button>
       <p class="error-msg" id="form-error"></p>
+
+      <!-- Missing fields soft warning -->
+      <div id="missing-banner" style="display:none;background:var(--card);border:1.5px solid var(--orange);border-radius:var(--radius);padding:16px 20px;margin-top:16px;">
+        <p style="font-size:14px;color:var(--text);">You haven't selected a <strong id="missing-fields-text"></strong>.</p>
+        <p style="font-size:13px;color:var(--text-muted);margin-top:4px;">We'll do our best with what you've provided.</p>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <button class="btn btn-primary" style="width:auto;" onclick="searchAnyway()">Search anyway</button>
+          <button class="btn btn-ghost" onclick="dismissBanner()">Go back</button>
+        </div>
+      </div>
     </div>
 
     <!-- ── Loading ── -->
@@ -147,15 +194,10 @@
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:28px;width:100%;max-width:460px;">
       <h3 style="margin-bottom:4px;" id="visited-modal-name"></h3>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px;" id="visited-modal-address"></p>
-
       <div class="form-group">
         <label>Your rating <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
         <div id="modal-star-picker" style="display:flex;gap:6px;font-size:28px;cursor:pointer;">
-          <span data-val="1">☆</span>
-          <span data-val="2">☆</span>
-          <span data-val="3">☆</span>
-          <span data-val="4">☆</span>
-          <span data-val="5">☆</span>
+          <span data-val="1">☆</span><span data-val="2">☆</span><span data-val="3">☆</span><span data-val="4">☆</span><span data-val="5">☆</span>
         </div>
       </div>
       <div class="form-group">
@@ -170,7 +212,6 @@
         <label>Notes <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
         <input type="text" id="modal-notes" placeholder="Favourite dish, occasion, who you went with…" />
       </div>
-
       <div style="display:flex;gap:10px;margin-top:20px;">
         <button class="btn btn-primary" style="flex:1;" onclick="saveVisitedModal()">Save</button>
         <button class="btn btn-outline" onclick="hideVisitedModal()">Cancel</button>
@@ -182,18 +223,134 @@
   <script src="/js/api.js"></script>
   <script>
     if (!requireAuth()) throw new Error('redirect');
-
     document.getElementById('greeting').textContent = `Hi, ${getUserName()}`;
 
-    // ── Post-session follow-up ──
+    // ── Voice integration ──
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+
+    if (!SpeechRecognition) {
+      document.getElementById('voice-default').style.display = 'none';
+      document.getElementById('voice-unsupported').style.display = 'block';
+    } else {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        applyVoiceTranscript(transcript);
+      };
+
+      recognition.onerror = () => {
+        document.getElementById('voice-listening').style.display = 'none';
+        document.getElementById('voice-default').style.display = 'block';
+      };
+
+      recognition.onend = () => {
+        if (document.getElementById('voice-listening').style.display !== 'none') {
+          document.getElementById('voice-listening').style.display = 'none';
+          document.getElementById('voice-default').style.display = 'block';
+        }
+      };
+    }
+
+    function startVoice() {
+      if (!recognition) return;
+      document.getElementById('voice-default').style.display = 'none';
+      document.getElementById('voice-result').style.display = 'none';
+      document.getElementById('voice-listening').style.display = 'block';
+      try { recognition.start(); } catch(e) {}
+    }
+
+    function stopVoice() {
+      if (recognition) recognition.stop();
+    }
+
+    function resetVoice() {
+      document.getElementById('voice-result').style.display = 'none';
+      document.getElementById('voice-default').style.display = 'block';
+    }
+
+    function selectOption(gridId, value) {
+      document.querySelectorAll(`#${gridId} .option-btn`).forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.value === value);
+      });
+    }
+
+    function applyVoiceTranscript(transcript) {
+      document.getElementById('voice-listening').style.display = 'none';
+      const t = transcript.toLowerCase();
+
+      // Meal type
+      const mealTests = [
+        [/\bbreakfast\b|\beggs benedict\b|\bmorning\b/, 'breakfast'],
+        [/\bbrunch\b/, 'brunch'],
+        [/\blunch\b|\bmidday\b/, 'lunch'],
+        [/\bdinner\b|\bsupper\b|\beverning meal\b/, 'dinner'],
+        [/late.?night|\bafter midnight\b/, 'late night'],
+        [/happy.?hour|\bcocktails after work\b/, 'happy hour'],
+        [/\bdessert\b|\bice cream\b|\bsweets\b/, 'dessert'],
+        [/\bcoffee\b|\bsnack\b|\bcafe\b|\bpastry\b/, 'coffee or snack'],
+      ];
+      for (const [rx, val] of mealTests) {
+        if (rx.test(t)) { selectOption('meal-options', val); break; }
+      }
+
+      // Vibe
+      const vibeTests = [
+        [/quick|fast|grab|takeout|take.?out/, 'quick bite'],
+        [/date.?night|romantic|intimate/, 'date night'],
+        [/\bbusiness\b|\bmeeting\b|\bclient\b|\bprofessional\b/, 'business'],
+        [/\bgroup\b|\bfriends\b|\bsocial\b|\bparty\b/, 'group / social'],
+        [/special.?occasion|\bbirthday\b|\banniversary\b|\bcelebrat/, 'special occasion'],
+        [/\bfamily\b|\bkids\b|\bchildren\b/, 'family-friendly'],
+        [/\boutdoor\b|\boutside\b|\bpatio\b|\bterrace\b/, 'outdoor seating'],
+        [/\bsolo\b|\balone\b|\bjust me\b/, 'solo or work'],
+        [/\btrendy\b|\bhip\b|\bhottest\b/, 'trendy new spot'],
+        [/\bcasual\b|\bchill\b|\brelax|\blow.?key/, 'casual'],
+      ];
+      for (const [rx, val] of vibeTests) {
+        if (rx.test(t)) { selectOption('vibe-options', val); break; }
+      }
+
+      // Distance
+      const distTests = [
+        [/under 1 mile|within 1 mile|1 mile|walking distance/, 'under_1'],
+        [/under 2|2\.5 mile|within 2 miles/, 'under_2_5'],
+        [/under 10|10 mile|within 10/, 'under_10'],
+        [/under 50|50 mile|anywhere|far away/, 'under_50'],
+      ];
+      for (const [rx, val] of distTests) {
+        if (rx.test(t)) { selectOption('distance-options', val); break; }
+      }
+
+      // Location — "near X", "in X", "around X"
+      const locMatch = transcript.match(/\b(?:near|in|around|at|by)\s+([A-Za-z0-9][A-Za-z0-9\s,]{2,40?)(?=\s+for|\s+under|\s+within|\s+craving|$)/i);
+      if (locMatch) {
+        document.getElementById('location-input').value = locMatch[1].trim();
+        locationData = null;
+      }
+
+      // Craving — "craving X" or "I want X"
+      const cravingMatch = transcript.match(/(?:craving|want|feel like|feeling like)\s+(?:some\s+)?(.+?)(?:\s+near|\s+in|\s+under|\s+$)/i);
+      if (cravingMatch) {
+        document.getElementById('craving-input').value = cravingMatch[1].trim();
+      }
+
+      document.getElementById('voice-transcript').textContent = `"${transcript}"`;
+      document.getElementById('voice-result').style.display = 'block';
+    }
+
+    // ── Follow-up ──
     function checkFollowUp() {
       if (sessionStorage.getItem('fr_followup_done')) return;
       const raw = localStorage.getItem('fr_last_recs');
       if (!raw) return;
       const { saved_at, restaurants } = JSON.parse(raw);
       if (!restaurants?.length) return;
-      const hoursSince = (Date.now() - new Date(saved_at)) / 3600000;
-      if (hoursSince < 1) return;
+      if ((Date.now() - new Date(saved_at)) / 3600000 < 1) return;
 
       const list = document.getElementById('followup-list');
       list.innerHTML = restaurants.map((r, i) => `
@@ -214,10 +371,7 @@
       const r = document.getElementById('followup-list')._restaurants?.[i];
       if (!r) return;
       try {
-        await apiFetch('/visited', {
-          method: 'POST',
-          body: JSON.stringify({ place_id: r.place_id, name: r.name, address: r.address })
-        });
+        await apiFetch('/visited', { method: 'POST', body: JSON.stringify({ place_id: r.place_id, name: r.name, address: r.address }) });
         const btn = document.getElementById(`fu-btn-${i}`);
         if (btn) { btn.textContent = '✓ Logged'; btn.disabled = true; btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)'; }
       } catch {}
@@ -230,7 +384,7 @@
       document.getElementById('questionnaire').style.display = 'block';
     }
 
-    // ── Session result persistence ──
+    // ── Session persistence ──
     function saveResultsToSession(restaurants, title, subtitle) {
       sessionStorage.setItem('fr_session_results', JSON.stringify({ restaurants, title, subtitle }));
     }
@@ -251,18 +405,14 @@
     }
 
     checkFollowUp();
-    if (!sessionStorage.getItem('fr_followup_done')) {
-      restoreSessionResults();
-    }
+    if (!sessionStorage.getItem('fr_followup_done')) restoreSessionResults();
 
     // ── Party size ──
     let partySize = 2;
-
     function changeParty(d) {
       partySize = Math.max(1, Math.min(12, partySize + d));
       document.getElementById('party-count').textContent = partySize;
     }
-
     apiFetch('/users/profile').then(u => {
       partySize = u.default_party_size || 2;
       document.getElementById('party-count').textContent = partySize;
@@ -288,13 +438,11 @@
       const status = document.getElementById('location-status');
       status.className = 'location-status';
       status.textContent = 'Requesting location…';
-
       if (!navigator.geolocation) {
         status.className = 'location-status err';
         status.textContent = 'Geolocation is not supported by your browser.';
         return;
       }
-
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           locationData = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -313,69 +461,91 @@
 
     // ── Location autocomplete ──
     let locationTimer = null;
-
     (function initLocationAutocomplete() {
       const input = document.getElementById('location-input');
       const dropdown = document.getElementById('location-dropdown');
-
       input.addEventListener('input', () => {
-        locationData = null; // clear GPS if user is typing
+        locationData = null;
         clearTimeout(locationTimer);
         const val = input.value.trim();
         if (val.length < 2) { dropdown.style.display = 'none'; return; }
-
         locationTimer = setTimeout(async () => {
           try {
             const results = await apiFetch(`/autocomplete?input=${encodeURIComponent(val)}&type=location`);
             if (!results.length) { dropdown.style.display = 'none'; return; }
-
             dropdown.innerHTML = results.map((r, i) => `
-              <div data-index="${i}" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;"
+              <div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px;"
                 onmousedown="selectLocationSuggestion(${i})"
                 onmouseenter="this.style.background='var(--card)'"
                 onmouseleave="this.style.background=''">
                 <div style="font-weight:600;color:var(--text);">${r.name}</div>
                 ${r.address ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${r.address}</div>` : ''}
-              </div>
-            `).join('');
+              </div>`).join('');
             dropdown._suggestions = results;
             dropdown.style.display = 'block';
           } catch { dropdown.style.display = 'none'; }
         }, 300);
       });
-
-      input.addEventListener('blur', () => {
-        setTimeout(() => { dropdown.style.display = 'none'; }, 150);
-      });
+      input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
     })();
 
     function selectLocationSuggestion(index) {
       const dropdown = document.getElementById('location-dropdown');
-      const suggestion = dropdown._suggestions?.[index];
-      if (!suggestion) return;
-      const fullAddress = suggestion.name + (suggestion.address ? ', ' + suggestion.address : '');
-      document.getElementById('location-input').value = fullAddress;
+      const s = dropdown._suggestions?.[index];
+      if (!s) return;
+      document.getElementById('location-input').value = s.name + (s.address ? ', ' + s.address : '');
       document.getElementById('location-status').textContent = '';
-      locationData = null; // will be geocoded on the backend
+      locationData = null;
       dropdown.style.display = 'none';
     }
 
-    // ── Get recommendations ──
+    // ── Validation & search ──
+    function getCurrentFormData() {
+      return {
+        meal_type: getSelection('meal-options'),
+        vibe: getSelection('vibe-options'),
+        distance: getSelection('distance-options'),
+        craving: document.getElementById('craving-input').value.trim(),
+        manualLocation: document.getElementById('location-input').value.trim()
+      };
+    }
+
     async function getRecommendations() {
       const errorEl = document.getElementById('form-error');
       errorEl.textContent = '';
+      document.getElementById('missing-banner').style.display = 'none';
 
-      const meal_type = getSelection('meal-options');
-      const vibe = getSelection('vibe-options');
-      const distance = getSelection('distance-options');
-      const craving = document.getElementById('craving-input').value.trim();
-      const manualLocation = document.getElementById('location-input').value.trim();
+      const { meal_type, vibe, distance, craving, manualLocation } = getCurrentFormData();
 
-      if (!meal_type) return (errorEl.textContent = 'Please select a meal type.');
-      if (!vibe) return (errorEl.textContent = 'Please select a vibe.');
-      if (!distance) return (errorEl.textContent = 'Please select a distance.');
-      if (!locationData && !manualLocation) return (errorEl.textContent = 'Please enter your location or use current location.');
+      if (!locationData && !manualLocation) {
+        return (errorEl.textContent = 'Please enter your location or use current location.');
+      }
 
+      const missing = [];
+      if (!meal_type) missing.push('meal type');
+      if (!vibe) missing.push('vibe');
+      if (!distance) missing.push('distance');
+
+      if (missing.length > 0) {
+        document.getElementById('missing-fields-text').textContent = missing.join(' and ');
+        document.getElementById('missing-banner').style.display = 'block';
+        return;
+      }
+
+      await doSearch();
+    }
+
+    async function searchAnyway() {
+      document.getElementById('missing-banner').style.display = 'none';
+      await doSearch();
+    }
+
+    function dismissBanner() {
+      document.getElementById('missing-banner').style.display = 'none';
+    }
+
+    async function doSearch() {
+      const { meal_type, vibe, distance, craving, manualLocation } = getCurrentFormData();
       const location = locationData || { address: manualLocation };
 
       document.getElementById('questionnaire').style.display = 'none';
@@ -400,7 +570,7 @@
         const loc = manualLocation || 'your area';
         const title = data.restaurants.length ? 'Here are your picks' : 'No results found';
         const subtitle = data.restaurants.length
-          ? `${data.restaurants.length} picks for ${meal_type} · ${vibe} · ${loc}`
+          ? `${data.restaurants.length} picks${meal_type ? ' for ' + meal_type : ''}${vibe ? ' · ' + vibe : ''} · ${loc}`
           : 'Try adjusting your distance or search criteria.';
 
         document.getElementById('results-title').textContent = title;
@@ -408,8 +578,7 @@
 
         if (!data.restaurants.length) {
           document.getElementById('results-list').innerHTML = `
-            <div class="empty-state">
-              <div class="icon">🍽️</div>
+            <div class="empty-state"><div class="icon">🍽️</div>
               <h3>No restaurants found</h3>
               <p>Try increasing your distance or changing the criteria.</p>
             </div>`;
@@ -417,12 +586,11 @@
           renderResults(data.restaurants);
           saveResultsToSession(data.restaurants, title, subtitle);
         }
-
         document.getElementById('results-state').style.display = 'block';
       } catch (err) {
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('questionnaire').style.display = 'block';
-        errorEl.textContent = err.message;
+        document.getElementById('form-error').textContent = err.message;
       }
     }
 
@@ -433,28 +601,35 @@
       document.getElementById('location-input').placeholder = 'Neighbourhood, city, or address…';
       document.getElementById('location-status').textContent = '';
       document.getElementById('craving-input').value = '';
+      document.getElementById('form-error').textContent = '';
+      document.getElementById('missing-banner').style.display = 'none';
       document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
       document.getElementById('results-state').style.display = 'none';
       document.getElementById('results-list').innerHTML = '';
       document.getElementById('questionnaire').style.display = 'block';
+      resetVoice();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // ── Helpers ──
     function stars(rating) {
       if (!rating) return '';
       const full = Math.round(rating);
       return '★'.repeat(full) + '☆'.repeat(5 - full);
     }
+    function priceLabel(level) { return level ? '$'.repeat(level) : ''; }
 
-    function priceLabel(level) {
-      return level ? '$'.repeat(level) : '';
+    // ── Visited tracking ──
+    let visitedPlaceIds = new Set();
+    apiFetch('/visited').then(list => list.forEach(v => visitedPlaceIds.add(v.place_id))).catch(() => {});
+
+    function markCardAsVisited(index) {
+      const c = document.getElementById(`visited-action-${index}`);
+      if (c) c.innerHTML = `<span class="badge badge-green" style="font-size:13px;padding:6px 12px;">✓ You've been here</span>`;
     }
 
     // ── "I've been here" modal ──
-    let resultRestaurants = [];
-    let modalRating = null;
-    let modalReturn = null;
-    let modalIndex = null;
+    let resultRestaurants = [], modalRating = null, modalReturn = null, modalIndex = null;
 
     const modalStars = document.querySelectorAll('#modal-star-picker span');
     modalStars.forEach(s => {
@@ -474,17 +649,13 @@
     function openVisitedModal(index) {
       const r = resultRestaurants[index];
       if (!r) return;
-      modalIndex = index;
-      modalRating = null;
-      modalReturn = null;
+      modalIndex = index; modalRating = null; modalReturn = null;
       document.getElementById('visited-modal-name').textContent = r.name;
       document.getElementById('visited-modal-address').textContent = r.address || '';
       document.getElementById('modal-notes').value = '';
       document.getElementById('modal-save-error').textContent = '';
       modalStars.forEach(sp => sp.textContent = '☆');
-      document.getElementById('modal-return-yes').style.cssText = '';
-      document.getElementById('modal-return-no').style.cssText = '';
-      document.getElementById('modal-return-null').style.cssText = '';
+      ['modal-return-yes','modal-return-no','modal-return-null'].forEach(id => document.getElementById(id).style.cssText = '');
       document.getElementById('visited-modal-overlay').style.display = 'flex';
     }
 
@@ -501,30 +672,25 @@
         await apiFetch('/visited', {
           method: 'POST',
           body: JSON.stringify({
-            place_id: r.place_id,
-            name: r.name,
-            address: r.address,
+            place_id: r.place_id, name: r.name, address: r.address,
             rating: modalRating,
             notes: document.getElementById('modal-notes').value.trim(),
             would_return: modalReturn
           })
         });
+        visitedPlaceIds.add(r.place_id);
         hideVisitedModal();
-        // Mark the button as done
-        const btn = document.getElementById(`visited-btn-${modalIndex}`);
-        if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; btn.style.color = 'var(--green)'; }
-      } catch (err) {
-        errorEl.textContent = err.message;
-      }
+        markCardAsVisited(modalIndex);
+      } catch (err) { errorEl.textContent = err.message; }
     }
 
     document.getElementById('visited-modal-overlay').addEventListener('click', (e) => {
       if (e.target === e.currentTarget) hideVisitedModal();
     });
 
-    function toggleDietaryMore(i) {
-      const more = document.getElementById(`dietary-more-${i}`);
-      const btn = document.getElementById(`dietary-more-btn-${i}`);
+    function toggleMore(sectionId, btnId) {
+      const more = document.getElementById(sectionId);
+      const btn = document.getElementById(btnId);
       if (!more) return;
       const hidden = more.style.display === 'none';
       more.style.display = hidden ? 'flex' : 'none';
@@ -532,85 +698,102 @@
     }
 
     // ── Render results ──
-    function renderResults(restaurants) {
-      resultRestaurants = restaurants;
-      const list = document.getElementById('results-list');
-      list.innerHTML = restaurants.map((r, i) => {
-        const reservationBtn = r.reservation
-          ? `<a href="${r.reservation.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${r.reservation.label}</a>`
-          : r.phone
-            ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
-            : '';
+    const PAGE_SIZE = 5;
+    let displayedCount = 0;
 
-        const yelpRating = r.yelp_rating
-          ? `<span style="color:#d32323;font-weight:600;">· Yelp ${r.yelp_rating}</span>`
+    function buildCard(r, i) {
+      const reservationBtn = r.reservation
+        ? `<a href="${r.reservation.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${r.reservation.label}</a>`
+        : r.phone
+          ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
           : '';
 
-        const dietaryDishesHtml = r.dietary_dishes?.length ? `
-          <div style="margin-bottom:14px;">
-            <div style="font-size:12px;font-weight:600;color:#4ade80;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🥗 Dietary options for you</div>
-            <div class="highlights" style="display:flex;flex-wrap:wrap;gap:6px;">
-              ${r.dietary_dishes.slice(0, 5).map(d => `<span class="chip" style="cursor:default;border-color:#1a3a20;color:#4ade80;background:#071510;">${d}</span>`).join('')}
+      const yelpRating = r.yelp_rating ? `<span style="color:#d32323;font-weight:600;">· Yelp ${r.yelp_rating}</span>` : '';
+
+      const dietaryDishesHtml = r.dietary_dishes?.length ? `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:600;color:#4ade80;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">🥗 Dietary options for you</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${r.dietary_dishes.slice(0,5).map(d => `<span class="chip" style="cursor:default;border-color:#1a3a20;color:#4ade80;background:#071510;">${d}</span>`).join('')}
+          </div>
+          ${r.dietary_dishes.length > 5 ? `
+            <div id="dietary-more-${i}" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px;">
+              ${r.dietary_dishes.slice(5).map(d => `<span class="chip" style="cursor:default;border-color:#1a3a20;color:#4ade80;background:#071510;">${d}</span>`).join('')}
             </div>
-            ${r.dietary_dishes.length > 5 ? `
-              <div id="dietary-more-${i}" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px;">
-                ${r.dietary_dishes.slice(5).map(d => `<span class="chip" style="cursor:default;border-color:#1a3a20;color:#4ade80;background:#071510;">${d}</span>`).join('')}
+            <button id="dietary-more-btn-${i}" class="btn btn-ghost btn-sm" style="margin-top:6px;padding:4px 8px;font-size:12px;color:var(--green);" onclick="toggleMore('dietary-more-${i}','dietary-more-btn-${i}')">See more</button>
+          ` : ''}
+        </div>` : '';
+
+      return `
+      <div class="restaurant-card">
+        ${r.photos?.length ? `
+          <div class="photo-strip">
+            ${r.photos.map(url => `<img src="${url}" alt="${r.name}" loading="lazy" onerror="this.style.display='none'" />`).join('')}
+          </div>` : `<div class="photo-placeholder">🍽️</div>`}
+        <div class="card-body">
+          <div class="card-header">
+            <div style="flex:1;">
+              <div class="card-title">${r.name}</div>
+              <div class="card-meta">
+                ${r.rating ? `<span class="stars">${stars(r.rating)}</span> <strong>${r.rating}</strong>` : ''}
+                ${yelpRating}
+                ${r.user_ratings_total ? `<span>(${r.user_ratings_total.toLocaleString()} reviews)</span>` : ''}
+                ${r.price_level ? `<span>${priceLabel(r.price_level)}</span>` : ''}
+                ${r.is_open_now === true ? `<span class="badge badge-green">Open now</span>` : r.is_open_now === false ? `<span class="badge badge-gray">Closed</span>` : ''}
               </div>
-              <button id="dietary-more-btn-${i}" class="btn btn-ghost btn-sm" style="margin-top:6px;padding:4px 8px;font-size:12px;color:var(--green);" onclick="toggleDietaryMore(${i})">See more</button>
-            ` : ''}
-          </div>` : '';
-
-        return `
-        <div class="restaurant-card">
-          ${r.photos?.length ? `
-            <div class="photo-strip">
-              ${r.photos.map(url => `<img src="${url}" alt="${r.name}" loading="lazy" onerror="this.style.display='none'" />`).join('')}
-            </div>` : `<div class="photo-placeholder">🍽️</div>`}
-
-          <div class="card-body">
-            <div class="card-header">
-              <div style="flex:1;">
-                <div class="card-title">${r.name}</div>
-                <div class="card-meta">
-                  ${r.rating ? `<span class="stars">${stars(r.rating)}</span> <strong>${r.rating}</strong>` : ''}
-                  ${yelpRating}
-                  ${r.user_ratings_total ? `<span>(${r.user_ratings_total.toLocaleString()} reviews)</span>` : ''}
-                  ${r.price_level ? `<span>${priceLabel(r.price_level)}</span>` : ''}
-                  ${r.is_open_now === true ? `<span class="badge badge-green">Open now</span>` : r.is_open_now === false ? `<span class="badge badge-gray">Closed</span>` : ''}
-                </div>
-                <div class="card-meta" style="margin-top:4px;">
-                  <span>📍 ${r.address}</span>
-                </div>
-              </div>
-            </div>
-
-            ${r.summary ? `<p class="summary">${r.summary}</p>` : ''}
-
-            ${r.popular_dishes?.length ? `
-              <div style="margin-bottom:14px;">
-                <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Popular dishes</div>
-                <div class="highlights">
-                  ${r.popular_dishes.map(d => `<span class="chip selected" style="cursor:default;">${d}</span>`).join('')}
-                </div>
-              </div>` : ''}
-
-            ${dietaryDishesHtml}
-
-            ${r.dietary_notes ? `
-              <div class="dietary-note">
-                <span>🥗</span>
-                <span>${r.dietary_notes}</span>
-              </div>` : ''}
-
-            <div class="card-actions">
-              ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
-              <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🗺️ Google Maps</a>
-              ${reservationBtn}
-              <button id="visited-btn-${i}" class="btn btn-ghost btn-sm" onclick="openVisitedModal(${i})">+ I've been here</button>
+              <div class="card-meta" style="margin-top:4px;"><span>📍 ${r.address}</span></div>
             </div>
           </div>
-        </div>`;
-      }).join('');
+          ${r.summary ? `<p class="summary">${r.summary}</p>` : ''}
+          ${r.popular_dishes?.length ? `
+            <div style="margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Popular dishes</div>
+              <div class="highlights">
+                ${r.popular_dishes.slice(0,5).map(d => `<span class="chip selected" style="cursor:default;">${d}</span>`).join('')}
+              </div>
+            </div>` : ''}
+          ${dietaryDishesHtml}
+          ${r.dietary_notes ? `<div class="dietary-note"><span>🥗</span><span>${r.dietary_notes}</span></div>` : ''}
+          <div class="card-actions">
+            ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
+            <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🗺️ Google Maps</a>
+            ${reservationBtn}
+            <span id="visited-action-${i}">
+              ${visitedPlaceIds.has(r.place_id)
+                ? `<span class="badge badge-green" style="font-size:13px;padding:6px 12px;">✓ You've been here</span>`
+                : `<button class="btn btn-ghost btn-sm" onclick="openVisitedModal(${i})">+ I've been here</button>`}
+            </span>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function renderResults(restaurants) {
+      resultRestaurants = restaurants;
+      displayedCount = 0;
+      const list = document.getElementById('results-list');
+      list.innerHTML = '';
+      showMoreRestaurants();
+    }
+
+    function showMoreRestaurants() {
+      const list = document.getElementById('results-list');
+      const batch = resultRestaurants.slice(displayedCount, displayedCount + PAGE_SIZE);
+      batch.forEach((r, j) => list.insertAdjacentHTML('beforeend', buildCard(r, displayedCount + j)));
+      displayedCount += batch.length;
+
+      const existing = document.getElementById('see-more-restaurants-btn');
+      if (existing) existing.remove();
+
+      if (displayedCount < resultRestaurants.length) {
+        const remaining = resultRestaurants.length - displayedCount;
+        list.insertAdjacentHTML('beforeend', `
+          <div id="see-more-restaurants-btn" style="text-align:center;margin-top:8px;margin-bottom:16px;">
+            <button class="btn btn-outline" style="width:auto;padding:11px 32px;" onclick="showMoreRestaurants()">
+              See more restaurants (${remaining} more)
+            </button>
+          </div>`);
+      }
     }
   </script>
 </body>
