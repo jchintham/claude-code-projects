@@ -10,7 +10,7 @@ function parseJSON(text) {
   return JSON.parse(cleaned);
 }
 
-async function summarizeAndScore(restaurant, session, userProfile, visitedHistory = []) {
+async function summarizeAndScore(restaurant, session, userProfile, visitedHistory = [], menuText = null) {
   const reviews = restaurant.reviews?.length
     ? restaurant.reviews.map(r => `"${r.text}" — ${r.rating}/5`).join('\n\n')
     : 'No reviews available.';
@@ -42,7 +42,11 @@ async function summarizeAndScore(restaurant, session, userProfile, visitedHistor
     visitedSection = `\nUSER'S PREVIOUSLY VISITED RESTAURANTS (for personalisation context):\n${lines}\n`;
   }
 
-  const prompt = `You are a food recommendation assistant. Analyse the restaurant reviews below and return a JSON summary.
+  const menuSection = menuText
+    ? `\nMENU DATA (scraped from restaurant website — prefer this over reviews for dish names):\n${menuText}\n`
+    : '';
+
+  const prompt = `You are a food recommendation assistant. Analyse the data below and return a JSON summary.
 
 USER DIETARY CONTEXT: ${dietaryContext}
 USER CUISINE PREFERENCES: ${(userProfile.cuisine_preferences || []).join(', ') || 'No preference'}
@@ -53,7 +57,7 @@ SESSION:
 RESTAURANT: ${restaurant.name}
 Type: ${(restaurant.types || []).filter(t => !['establishment','point_of_interest','food'].includes(t)).join(', ')}
 Price: ${'$'.repeat(restaurant.price_level || 2)} | Google: ${restaurant.rating}/5 (${restaurant.user_ratings_total} reviews)${restaurant.yelp_rating ? ` | Yelp: ${restaurant.yelp_rating}/5` : ''}
-
+${menuSection}
 REVIEWS:
 ${reviews}
 
@@ -66,8 +70,8 @@ Return ONLY a raw JSON object — no markdown, no code fences, nothing else:
 }
 
 Rules:
-- popular_dishes: Use exact menu names from reviews, written in Title Case (e.g. "Truffle Pasta", "Spicy Tuna Roll"). List up to 5. Omit if no specific dishes are mentioned in reviews.
-- dietary_dishes: ${hasDietaryRestrictions ? `List up to 8 dishes that are suitable for the user's dietary restrictions (${dietaryContext}). Use exact menu names in Title Case. Empty array if none found.` : 'Always return empty array since user has no restrictions.'}
+- popular_dishes: If menu data is available, extract real dish names directly from the menu. Otherwise use dishes mentioned in reviews. Write in Title Case (e.g. "Truffle Pasta", "Spicy Tuna Roll"). List up to 5.
+- dietary_dishes: ${hasDietaryRestrictions ? `List up to 8 dishes that are suitable for the user's dietary restrictions (${dietaryContext}). Prefer menu data over reviews. Use exact menu names in Title Case. Empty array if none found.` : 'Always return empty array since user has no restrictions.'}
 - dietary_notes: Be specific about which menu items or preparation styles suit the user's needs.`;
 
   try {

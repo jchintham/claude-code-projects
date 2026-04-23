@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crave — Food Recommendations</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="brand">
+      <div class="brand-icon">🍴</div>
+      <h1>Crave<span>.</span></h1>
+    </div>
+
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to get personalized restaurant picks.</p>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-primary" id="submit-btn">Sign in</button>
+      <p class="error-msg" id="error-msg"></p>
+    </form>
+
+    <p class="auth-footer">
+      Don't have an account? <a href="/signup.html">Create one</a>
+    </p>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // Already logged in → go to app
+    if (getToken()) window.location.href = '/recommend.html';
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const errorEl = document.getElementById('error-msg');
+      errorEl.textContent = '';
+      btn.disabled = true;
+      btn.textContent = 'Signing in…';
+
+      try {
+        const data = await apiFetch('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          })
+        });
+        setSession(data.token, data.name);
+        window.location.href = data.isNewUser ? '/profile.html?setup=1' : '/recommend.html';
+      } catch (err) {
+        errorEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Sign in';
+      }
+    });
+  </script>
+</body>
+</html>

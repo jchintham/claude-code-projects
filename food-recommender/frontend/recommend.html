@@ -333,10 +333,16 @@
         locationData = null;
       }
 
-      // Craving — "craving X" or "I want X"
-      const cravingMatch = transcript.match(/(?:craving|want|feel like|feeling like)\s+(?:some\s+)?(.+?)(?:\s+near|\s+in|\s+under|\s+$)/i);
+      // Craving — "craving X" / "I want X" / "looking for X"
+      // Stop before location words or "for [meal type]"
+      const cravingMatch = transcript.match(
+        /(?:craving|want|feel like|feeling like|looking for)\s+(?:some\s+)?(.+?)(?=\s+(?:near|in|around|at|by|under|within)|\s+for\s+(?:breakfast|brunch|lunch|dinner|late\s*night|coffee|snack|happy\s*hour|dessert)\b|$)/i
+      );
       if (cravingMatch) {
-        document.getElementById('craving-input').value = cravingMatch[1].trim();
+        let craving = cravingMatch[1].trim();
+        // Strip any trailing "for [meal]" that slipped through
+        craving = craving.replace(/\s+for\s+(?:breakfast|brunch|lunch|dinner|late\s*night|coffee|snack|happy\s*hour|dessert)\s*$/i, '').trim();
+        document.getElementById('craving-input').value = craving;
       }
 
       document.getElementById('voice-transcript').textContent = `"${transcript}"`;
@@ -697,6 +703,34 @@
       if (btn) btn.textContent = hidden ? 'See less' : 'See more';
     }
 
+    // ── YouTube async hydration ──
+    async function hydrateYouTube(restaurants, startIndex, count) {
+      const batch = restaurants.slice(startIndex, startIndex + count);
+      await Promise.all(batch.map(async (r, j) => {
+        const i = startIndex + j;
+        const container = document.getElementById(`yt-${i}`);
+        if (!container) return;
+        try {
+          const cityMatch = (r.address || '').match(/,\s*([^,]+),\s*[A-Z]{2}/);
+          const city = cityMatch?.[1]?.trim() || '';
+          const params = new URLSearchParams({ name: r.name, city });
+          const data = await apiFetch(`/restaurants/youtube/${encodeURIComponent(r.place_id)}?${params}`);
+          if (!data.video) return;
+          const v = data.video;
+          container.innerHTML = `
+            <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" rel="noopener"
+               style="display:flex;align-items:center;gap:10px;background:var(--card-raised);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-decoration:none;color:var(--text);">
+              <img src="${v.thumbnail}" alt="thumbnail" style="width:72px;height:48px;object-fit:cover;border-radius:4px;flex-shrink:0;" />
+              <div style="min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#ff0000;margin-bottom:2px;">▶ YouTube review</div>
+                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v.title}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${v.channel}</div>
+              </div>
+            </a>`;
+        } catch {}
+      }));
+    }
+
     // ── Render results ──
     const PAGE_SIZE = 5;
     let displayedCount = 0;
@@ -754,6 +788,7 @@
             </div>` : ''}
           ${dietaryDishesHtml}
           ${r.dietary_notes ? `<div class="dietary-note"><span>🥗</span><span>${r.dietary_notes}</span></div>` : ''}
+          <div id="yt-${i}" style="margin-bottom:10px;"></div>
           <div class="card-actions">
             ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
             <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🗺️ Google Maps</a>
@@ -778,9 +813,12 @@
 
     function showMoreRestaurants() {
       const list = document.getElementById('results-list');
-      const batch = resultRestaurants.slice(displayedCount, displayedCount + PAGE_SIZE);
-      batch.forEach((r, j) => list.insertAdjacentHTML('beforeend', buildCard(r, displayedCount + j)));
+      const batchStart = displayedCount;
+      const batch = resultRestaurants.slice(batchStart, batchStart + PAGE_SIZE);
+      batch.forEach((r, j) => list.insertAdjacentHTML('beforeend', buildCard(r, batchStart + j)));
       displayedCount += batch.length;
+      // Hydrate YouTube links async — cards are already visible
+      hydrateYouTube(resultRestaurants, batchStart, batch.length);
 
       const existing = document.getElementById('see-more-restaurants-btn');
       if (existing) existing.remove();

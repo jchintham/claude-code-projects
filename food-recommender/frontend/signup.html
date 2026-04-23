@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crave — Create Account</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card" style="max-width: 500px;">
+    <div class="brand">
+      <div class="brand-icon">🍴</div>
+      <h1>Crave<span>.</span></h1>
+    </div>
+
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-0"></div>
+      <div class="step-dot" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+    </div>
+
+    <!-- Step 1: Account -->
+    <div class="step active" id="step-0">
+      <h2>Create your account</h2>
+      <p class="subtitle">Takes less than a minute.</p>
+      <form id="account-form">
+        <div class="form-group">
+          <label for="name">Your name</label>
+          <input type="text" id="name" placeholder="Jay" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password <span style="color:var(--text-muted);font-weight:400">(min. 8 characters)</span></label>
+          <input type="password" id="password" placeholder="Create a password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" id="account-btn">Continue</button>
+        <p class="error-msg" id="error-msg"></p>
+      </form>
+      <p class="auth-footer">Already have an account? <a href="/index.html">Sign in</a></p>
+    </div>
+
+    <!-- Step 2: Dietary restrictions -->
+    <div class="step" id="step-1">
+      <h2>Any dietary restrictions?</h2>
+      <p class="subtitle">Select all that apply, and add any personal preferences below.</p>
+
+      <div class="chips" id="diet-chips">
+        <div class="chip" data-value="vegan">🌱 Vegan</div>
+        <div class="chip" data-value="vegetarian">🥦 Vegetarian</div>
+        <div class="chip" data-value="gluten-free">🌾 Gluten-free</div>
+        <div class="chip" data-value="dairy-free">🥛 Dairy-free</div>
+        <div class="chip" data-value="halal">☪️ Halal</div>
+        <div class="chip" data-value="kosher">✡️ Kosher</div>
+        <div class="chip" data-value="nut allergy">🥜 Nut allergy</div>
+        <div class="chip" data-value="shellfish allergy">🦐 Shellfish allergy</div>
+        <div class="chip" data-value="soy-free">Soy-free</div>
+        <div class="chip" data-value="low-carb">Low-carb</div>
+        <div class="chip" data-value="pescatarian">🐟 Pescatarian</div>
+        <div class="chip" data-value="keto">Keto</div>
+      </div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label>Anything else? <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+        <div class="tag-input-area" id="notes-tag-area" onclick="document.getElementById('notes-input').focus()">
+          <input class="tag-input-field" id="notes-input" placeholder="e.g. light cheese only… then press Enter" />
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:5px;">Press Enter after each preference to add it as a tag.</div>
+      </div>
+
+      <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button class="btn btn-outline" onclick="prevStep()">Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Cuisine preferences -->
+    <div class="step" id="step-2">
+      <h2>What cuisines do you love?</h2>
+      <p class="subtitle">Select favourites or search and type to add more.</p>
+
+      <input type="text" id="cuisine-search" placeholder="Search cuisines…" style="margin-bottom:12px;" oninput="filterCuisines(this.value)" />
+
+      <div class="chips" id="cuisine-chips">
+        <div class="chip" data-value="Italian">🍝 Italian</div>
+        <div class="chip" data-value="Japanese">🍣 Japanese</div>
+        <div class="chip" data-value="Mexican">🌮 Mexican</div>
+        <div class="chip" data-value="Chinese">🥟 Chinese</div>
+        <div class="chip" data-value="Indian">🍛 Indian</div>
+        <div class="chip" data-value="Thai">🍜 Thai</div>
+        <div class="chip" data-value="American">🍔 American</div>
+        <div class="chip" data-value="Mediterranean">🫒 Mediterranean</div>
+        <div class="chip" data-value="Korean">🥩 Korean</div>
+        <div class="chip" data-value="French">🥐 French</div>
+        <div class="chip" data-value="Middle Eastern">🧆 Middle Eastern</div>
+        <div class="chip" data-value="Vietnamese">🍲 Vietnamese</div>
+        <div class="chip" data-value="Greek">🫕 Greek</div>
+        <div class="chip" data-value="Spanish">🥘 Spanish</div>
+        <div class="chip" data-value="Seafood">🦞 Seafood</div>
+        <div class="chip" data-value="Steakhouse">🥩 Steakhouse</div>
+        <div class="chip" data-value="Sushi">🍱 Sushi</div>
+        <div class="chip" data-value="Pizza">🍕 Pizza</div>
+        <div class="chip" data-value="Burgers">🍔 Burgers</div>
+        <div class="chip" data-value="BBQ">🔥 BBQ</div>
+        <div class="chip" data-value="Brunch">🥂 Brunch</div>
+        <div class="chip" data-value="Peruvian">🥑 Peruvian</div>
+        <div class="chip" data-value="Ethiopian">🍲 Ethiopian</div>
+        <div class="chip" data-value="Caribbean">🌴 Caribbean</div>
+        <div class="chip" data-value="Turkish">🥙 Turkish</div>
+        <div class="chip" data-value="Dim Sum">🥢 Dim Sum</div>
+        <div class="chip" data-value="Ramen">🍜 Ramen</div>
+        <div class="chip" data-value="Tapas">🫙 Tapas</div>
+        <div class="chip" data-value="Farm-to-table">🌿 Farm-to-table</div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px;">
+        <label for="cuisine-custom">Don't see your cuisine? Add it:</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cuisine-custom" placeholder="e.g. Oaxacan, Georgian…" style="flex:1;" />
+          <button class="btn btn-outline" type="button" onclick="addCustomCuisine()">Add</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; display: flex; gap: 10px;">
+        <button class="btn btn-outline" onclick="prevStep()">Back</button>
+        <button class="btn btn-primary" id="finish-btn" onclick="finish()">Finish setup</button>
+      </div>
+      <p class="error-msg" id="finish-error"></p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (getToken()) window.location.href = '/recommend.html';
+
+    let currentStep = 0;
+    let authToken = null;
+    let userName = null;
+
+    // Chip toggle
+    document.querySelectorAll('#diet-chips .chip, #cuisine-chips .chip').forEach(chip => {
+      chip.addEventListener('click', () => chip.classList.toggle('selected'));
+    });
+
+    // ── Dietary notes tag input ──
+    let dietaryNoteTags = [];
+
+    function renderNoteTags() {
+      const area = document.getElementById('notes-tag-area');
+      const input = document.getElementById('notes-input');
+      area.querySelectorAll('.tag-pill').forEach(p => p.remove());
+      dietaryNoteTags.forEach((tag, i) => {
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill';
+        pill.innerHTML = `${tag}<button type="button" onclick="removeNoteTag(${i})">×</button>`;
+        area.insertBefore(pill, input);
+      });
+    }
+
+    function addNoteTag() {
+      const input = document.getElementById('notes-input');
+      const val = input.value.trim();
+      if (val && !dietaryNoteTags.includes(val)) { dietaryNoteTags.push(val); renderNoteTags(); }
+      input.value = '';
+    }
+
+    function removeNoteTag(i) { dietaryNoteTags.splice(i, 1); renderNoteTags(); }
+
+    document.getElementById('notes-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); addNoteTag(); }
+    });
+
+    function filterCuisines(query) {
+      const q = query.toLowerCase();
+      document.querySelectorAll('#cuisine-chips .chip').forEach(chip => {
+        const match = chip.dataset.value.toLowerCase().includes(q);
+        chip.style.display = match ? '' : 'none';
+      });
+    }
+
+    function addCustomCuisine() {
+      const input = document.getElementById('cuisine-custom');
+      const val = input.value.trim();
+      if (!val) return;
+
+      // Don't add duplicates
+      const existing = [...document.querySelectorAll('#cuisine-chips .chip')]
+        .find(c => c.dataset.value.toLowerCase() === val.toLowerCase());
+      if (existing) {
+        existing.classList.add('selected');
+        existing.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        const chip = document.createElement('div');
+        chip.className = 'chip selected';
+        chip.dataset.value = val;
+        chip.textContent = val;
+        chip.addEventListener('click', () => chip.classList.toggle('selected'));
+        document.getElementById('cuisine-chips').appendChild(chip);
+      }
+      input.value = '';
+      filterCuisines('');
+    }
+
+    function getSelected(containerId) {
+      return [...document.querySelectorAll(`#${containerId} .chip.selected`)]
+        .map(c => c.dataset.value);
+    }
+
+    function showStep(n) {
+      document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i === n));
+      document.querySelectorAll('.step-dot').forEach((d, i) => {
+        d.classList.remove('active', 'done');
+        if (i < n) d.classList.add('done');
+        if (i === n) d.classList.add('active');
+      });
+      currentStep = n;
+    }
+
+    function nextStep() { showStep(currentStep + 1); }
+    function prevStep() { showStep(currentStep - 1); }
+
+    document.getElementById('account-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('account-btn');
+      const errorEl = document.getElementById('error-msg');
+      errorEl.textContent = '';
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+
+      try {
+        const data = await apiFetch('/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: document.getElementById('name').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          })
+        });
+        authToken = data.token;
+        userName = data.name;
+        nextStep();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+      }
+    });
+
+    async function finish() {
+      const btn = document.getElementById('finish-btn');
+      const errorEl = document.getElementById('finish-error');
+      errorEl.textContent = '';
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      localStorage.setItem('fr_token', authToken);
+
+      try {
+        const pendingNote = document.getElementById('notes-input').value.trim();
+        if (pendingNote) dietaryNoteTags.push(pendingNote);
+        await apiFetch('/users/profile', {
+          method: 'PUT',
+          body: JSON.stringify({
+            dietary_restrictions: getSelected('diet-chips'),
+            dietary_notes: dietaryNoteTags,
+            cuisine_preferences: getSelected('cuisine-chips')
+          })
+        });
+        setSession(authToken, userName);
+        window.location.href = '/recommend.html';
+      } catch (err) {
+        errorEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = 'Finish setup';
+      }
+    }
+  </script>
+</body>
+</html>

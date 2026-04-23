@@ -5,6 +5,8 @@ const { geocodeAddress, searchRestaurants, getPlaceDetails, getPhotoUrl } = requ
 const { matchYelpBusiness, getReviews } = require('../services/yelp');
 const { summarizeAndScore } = require('../services/claude');
 const { getOpenTableLink, getResyLink, getGoogleMapsLink } = require('../services/reservations');
+const { fetchMenuText } = require('../services/menuScraper');
+const { searchYouTubeVideo } = require('../services/youtube');
 
 const router = express.Router();
 
@@ -69,8 +71,11 @@ router.post('/recommend', requireAuth, async (req, res) => {
         try {
           const details = await getPlaceDetails(place.place_id);
 
-          // Yelp cross-reference
-          const yelpBiz = await matchYelpBusiness(details.name, coords.lat, coords.lng);
+          // Yelp cross-reference + menu scraping (run in parallel)
+          const [yelpBiz, menuText] = await Promise.all([
+            matchYelpBusiness(details.name, coords.lat, coords.lng),
+            fetchMenuText(details.website)
+          ]);
           const yelpReviews = yelpBiz ? await getReviews(yelpBiz.id) : [];
 
           // Merge reviews
@@ -86,7 +91,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
           };
 
           const session = { meal_type, vibe, craving, party_size: seats };
-          const ai = await summarizeAndScore(restaurantData, session, userProfile, visitedHistory);
+          const ai = await summarizeAndScore(restaurantData, session, userProfile, visitedHistory, menuText);
 
           // Extract city for reservation links
           const cityMatch = (details.formatted_address || '').match(/,\s*([^,]+),\s*[A-Z]{2}/);
@@ -141,6 +146,24 @@ router.post('/recommend', requireAuth, async (req, res) => {
     console.error('Recommend error:', err.message);
     res.status(500).json({ error: 'Failed to fetch recommendations. Please try again.' });
   }
+});
+
+// ── YouTube: cached lookup per place_id ──
+router.get('/youtube/:placeId', requireAuth, async (req, res) => {
+  const { placeId } = req.params;
+  const { name, city } = req.query;
+
+  // Return cached result (including cached nulls)
+  const cached = db.getYouTubeCache(placeId);
+  if (cached !== undefined) {
+    return res.json({ video: cached.video });
+  }
+
+  if (!name) return res.json({ video: null });
+
+  const video = await searchYouTubeVideo(name, city || '');
+  db.setYouTubeCache(placeId, video);
+  res.json({ video });
 });
 
 module.exports = router;
