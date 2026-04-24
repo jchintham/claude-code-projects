@@ -258,9 +258,13 @@
     if (!requireAuth()) throw new Error('redirect');
     document.getElementById('greeting').textContent = `Hi, ${getUserName()}`;
 
-    // ── State (declared early so all functions can reference them) ──
+    // ── State (declared early — must be before init calls that trigger rendering) ──
     let partySize = 2;
     let locationData = null;
+    let visitedPlaceIds = new Set();
+    let resultRestaurants = [];
+    let displayedCount = 0;
+    const PAGE_SIZE = 5;
 
     // ── Voice ──
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -719,7 +723,6 @@
     function priceLabel(level) { return level ? '$'.repeat(level) : ''; }
 
     // ── Visited tracking ──
-    let visitedPlaceIds = new Set();
     apiFetch('/visited').then(list => list.forEach(v => visitedPlaceIds.add(v.place_id))).catch(() => {});
 
     function markCardAsVisited(index) {
@@ -728,7 +731,7 @@
     }
 
     // ── "I've been here" modal ──
-    let resultRestaurants = [], modalRating = null, modalReturn = null, modalIndex = null;
+    let modalRating = null, modalReturn = null, modalIndex = null;
 
     const modalStars = document.querySelectorAll('#modal-star-picker span');
     modalStars.forEach(s => {
@@ -825,9 +828,6 @@
     }
 
     // ── Render results ──
-    const PAGE_SIZE = 5;
-    let displayedCount = 0;
-
     function buildCard(r, i) {
       const reservationBtn = r.reservation
         ? `<a href="${r.reservation.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${r.reservation.label}</a>`
