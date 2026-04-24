@@ -58,7 +58,8 @@
         <div id="voice-listening" style="display:none;">
           <button onclick="stopVoice()" class="voice-pulse-btn" style="width:72px;height:72px;border-radius:50%;background:var(--orange);border:none;font-size:30px;cursor:pointer;">🎤</button>
           <p style="font-size:16px;font-weight:600;margin-top:14px;">Listening…</p>
-          <p style="font-size:13px;color:var(--text-muted);">Speak now, then pause. Tap to stop early.</p>
+          <p style="font-size:13px;color:var(--text-muted);">Speak freely, then tap the mic to stop.</p>
+          <p id="voice-interim" style="font-size:13px;color:var(--text);font-style:italic;margin-top:10px;min-height:18px;padding:0 12px;"></p>
         </div>
         <!-- Result -->
         <div id="voice-result" style="display:none;">
@@ -228,6 +229,7 @@
     // ── Voice integration ──
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
+    let voiceTranscript = '';  // accumulates final results across pauses
 
     if (!SpeechRecognition) {
       document.getElementById('voice-default').style.display = 'none';
@@ -235,29 +237,50 @@
     } else {
       recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
-      recognition.interimResults = false;
+      recognition.continuous = true;      // keep recording through pauses
+      recognition.interimResults = true;  // show live text while speaking
       recognition.maxAlternatives = 1;
 
       recognition.onresult = (e) => {
-        const transcript = e.results[0][0].transcript;
-        applyVoiceTranscript(transcript);
+        let finalText = '';
+        let interimText = '';
+        for (let i = 0; i < e.results.length; i++) {
+          if (e.results[i].isFinal) {
+            finalText += e.results[i][0].transcript + ' ';
+          } else {
+            interimText += e.results[i][0].transcript;
+          }
+        }
+        voiceTranscript = finalText.trim();
+        // Show live transcript so the user can see what's being captured
+        document.getElementById('voice-interim').textContent =
+          (voiceTranscript + (interimText ? ' ' + interimText : '')).trim();
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (e) => {
+        // Ignore no-speech events in continuous mode — the mic stays open
+        if (e.error === 'no-speech') return;
         document.getElementById('voice-listening').style.display = 'none';
         document.getElementById('voice-default').style.display = 'block';
       };
 
       recognition.onend = () => {
+        // Only fires when explicitly stopped — apply the accumulated transcript
         if (document.getElementById('voice-listening').style.display !== 'none') {
-          document.getElementById('voice-listening').style.display = 'none';
-          document.getElementById('voice-default').style.display = 'block';
+          if (voiceTranscript) {
+            applyVoiceTranscript(voiceTranscript);
+          } else {
+            document.getElementById('voice-listening').style.display = 'none';
+            document.getElementById('voice-default').style.display = 'block';
+          }
         }
       };
     }
 
     function startVoice() {
       if (!recognition) return;
+      voiceTranscript = '';
+      document.getElementById('voice-interim').textContent = '';
       document.getElementById('voice-default').style.display = 'none';
       document.getElementById('voice-result').style.display = 'none';
       document.getElementById('voice-listening').style.display = 'block';
