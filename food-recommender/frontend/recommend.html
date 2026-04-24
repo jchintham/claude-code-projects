@@ -829,11 +829,12 @@
 
     // ── Render results ──
     function buildCard(r, i) {
-      const reservationBtn = r.reservation
-        ? `<a href="${r.reservation.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${r.reservation.label}</a>`
-        : r.phone
-          ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
-          : '';
+      const reservationBtns = (r.reservations || [])
+        .map(res => `<a href="${res.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${res.label}</a>`)
+        .join('');
+      const phoneEl = r.phone
+        ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
+        : '';
 
       const yelpRating = r.yelp_rating ? `<span style="color:#d32323;font-weight:600;">· Yelp ${r.yelp_rating}</span>` : '';
 
@@ -885,7 +886,8 @@
           <div class="card-actions">
             ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
             <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🗺️ Google Maps</a>
-            ${reservationBtn}
+            ${reservationBtns}
+            ${phoneEl}
             <span id="visited-action-${i}">
               ${visitedPlaceIds.has(r.place_id)
                 ? `<span class="badge badge-green" style="font-size:13px;padding:6px 12px;">✓ You've been here</span>`

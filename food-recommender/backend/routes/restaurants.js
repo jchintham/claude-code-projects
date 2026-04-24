@@ -32,14 +32,14 @@ router.post('/recommend', requireAuth, async (req, res) => {
   try {
     const { meal_type, vibe, distance, craving, location, party_size, date_time } = req.body;
 
-    const userRow = db.findUserById(req.userId);
+    const userRow = await db.findUserById(req.userId);
     const userProfile = {
       dietary_restrictions: userRow.dietary_restrictions,
       dietary_notes: userRow.dietary_notes || null,
       cuisine_preferences: userRow.cuisine_preferences
     };
 
-    const visitedHistory = db.getVisited(req.userId).slice(0, 10);
+    const visitedHistory = (await db.getVisited(req.userId)).slice(0, 10);
 
     // Resolve coordinates
     let coords;
@@ -106,20 +106,18 @@ router.post('/recommend', requireAuth, async (req, res) => {
         const cityMatch = (details.formatted_address || '').match(/,\s*([^,]+),\s*[A-Z]{2}/);
         const city = cityMatch?.[1]?.trim() || '';
 
-        // Determine reservation platform from website URL
+        // Check if restaurant's own website is a booking platform (rare but possible)
         const platform = detectReservationPlatform(null, details.website);
 
-        let reservation = null;
-        if (platform === 'opentable') {
-          reservation = { type: 'opentable', url: getOpenTableLink(details.name, city, date_time, seats), label: 'Reserve on OpenTable' };
-        } else if (platform === 'resy') {
-          reservation = { type: 'resy', url: getResyLink(details.name, city, date, seats), label: 'Reserve on Resy' };
-        } else if (platform === 'tock') {
-          reservation = { type: 'tock', url: details.website, label: 'Reserve on Tock' };
+        // Always provide OpenTable + Resy search links; if website IS a platform, surface it first
+        const reservations = [];
+        if (platform === 'tock') {
+          reservations.push({ type: 'tock', url: details.website, label: 'Reserve on Tock' });
         } else if (platform === 'yelp') {
-          reservation = { type: 'yelp', url: details.website, label: 'Reserve on Yelp' };
+          reservations.push({ type: 'yelp', url: details.website, label: 'Reserve on Yelp' });
         }
-        // If no platform detected, reservation stays null — frontend shows phone number only
+        reservations.push({ type: 'opentable', url: getOpenTableLink(details.name, city, date_time, seats), label: 'OpenTable' });
+        reservations.push({ type: 'resy', url: getResyLink(details.name, city, date, seats), label: 'Resy' });
 
         const photos = (details.photos || []).slice(0, 5).map(p => getPhotoUrl(p.photo_reference));
 
@@ -140,7 +138,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
           popular_dishes: ai.popular_dishes || [],
           dietary_dishes: ai.dietary_dishes || [],
           dietary_notes: ai.dietary_notes || null,
-          reservation
+          reservations
         };
       } catch (err) {
         console.error(`Skipping ${place.name}:`, err.message);
@@ -163,15 +161,15 @@ router.get('/youtube/:placeId', requireAuth, async (req, res) => {
   const { name, city } = req.query;
 
   // Return cached result (including cached nulls)
-  const cached = db.getYouTubeCache(placeId);
+  const cached = await db.getYouTubeCache(placeId);
   if (cached !== undefined) {
-    return res.json({ video: cached.video });
+    return res.json({ video: cached.video_id ? { video_id: cached.video_id, title: cached.title, channel: cached.channel, thumbnail: cached.thumbnail } : null });
   }
 
   if (!name) return res.json({ video: null });
 
   const video = await searchYouTubeVideo(name, city || '');
-  db.setYouTubeCache(placeId, video);
+  await db.setYouTubeCache(placeId, video);
   res.json({ video });
 });
 

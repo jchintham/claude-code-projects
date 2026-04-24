@@ -1,112 +1,118 @@
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-const DB_PATH = path.join(__dirname, 'db.json');
-
-function load() {
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({ users: [], visited_restaurants: [] }, null, 2));
-  }
-  const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
-  if (!data.visited_restaurants) data.visited_restaurants = [];
-  return data;
+function getClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
+  return createClient(url, key);
 }
 
-function save(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
-
-function nextId(collection) {
-  if (!collection.length) return 1;
-  return Math.max(...collection.map(r => r.id)) + 1;
+// Helper — throw on Supabase errors
+function check(result) {
+  if (result.error) throw new Error(result.error.message);
+  return result.data;
 }
 
 const db = {
-  findUserByEmail(email) {
-    return load().users.find(u => u.email === email) || null;
+  // ── Users ──
+  async findUserByEmail(email) {
+    const rows = check(await getClient().from('users').select('*').eq('email', email).limit(1));
+    return rows[0] || null;
   },
 
-  findUserById(id) {
-    return load().users.find(u => u.id === id) || null;
+  async findUserById(id) {
+    const rows = check(await getClient().from('users').select('*').eq('id', id).limit(1));
+    return rows[0] || null;
   },
 
-  createUser({ email, password_hash, name }) {
-    const data = load();
-    const user = {
-      id: nextId(data.users),
-      email,
-      password_hash,
-      name,
-      dietary_restrictions: [],
-      dietary_notes: '',
-      cuisine_preferences: [],
-      default_party_size: 2,
-      created_at: new Date().toISOString()
-    };
-    data.users.push(user);
-    save(data);
-    return user;
+  async createUser({ email, password_hash, name }) {
+    const rows = check(await getClient()
+      .from('users')
+      .insert({ email, password_hash, name })
+      .select());
+    return rows[0];
   },
 
-  updateUser(id, fields) {
-    const data = load();
-    const idx = data.users.findIndex(u => u.id === id);
-    if (idx === -1) return null;
-    data.users[idx] = { ...data.users[idx], ...fields };
-    save(data);
-    return data.users[idx];
+  async updateUser(id, fields) {
+    const rows = check(await getClient()
+      .from('users')
+      .update(fields)
+      .eq('id', id)
+      .select());
+    return rows[0] || null;
   },
 
-  // Visited restaurants
-  getVisited(userId) {
-    return load().visited_restaurants.filter(r => r.user_id === userId);
+  // ── Visited restaurants ──
+  async getVisited(userId) {
+    return check(await getClient()
+      .from('visited_restaurants')
+      .select('*')
+      .eq('user_id', userId)
+      .order('visited_at', { ascending: false }));
   },
 
-  addVisited(userId, restaurant) {
-    const data = load();
-    const existing = data.visited_restaurants.find(
-      r => r.user_id === userId && r.place_id === restaurant.place_id
-    );
-    if (existing) {
-      // Update notes/rating if already logged
-      Object.assign(existing, { ...restaurant, updated_at: new Date().toISOString() });
+  async addVisited(userId, restaurant) {
+    const client = getClient();
+    // Check if already exists
+    const existing = check(await client
+      .from('visited_restaurants')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('place_id', restaurant.place_id)
+      .limit(1));
+
+    if (existing.length) {
+      const rows = check(await client
+        .from('visited_restaurants')
+        .update({ ...restaurant, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('place_id', restaurant.place_id)
+        .select());
+      return rows[0];
     } else {
-      data.visited_restaurants.push({
-        id: nextId(data.visited_restaurants),
-        user_id: userId,
-        ...restaurant,
-        visited_at: new Date().toISOString()
-      });
+      const rows = check(await client
+        .from('visited_restaurants')
+        .insert({ user_id: userId, ...restaurant })
+        .select());
+      return rows[0];
     }
-    save(data);
-    return data.visited_restaurants.find(r => r.user_id === userId && r.place_id === restaurant.place_id);
   },
 
-  removeVisited(userId, placeId) {
-    const data = load();
-    data.visited_restaurants = data.visited_restaurants.filter(
-      r => !(r.user_id === userId && r.place_id === placeId)
-    );
-    save(data);
+  async removeVisited(userId, placeId) {
+    check(await getClient()
+      .from('visited_restaurants')
+      .delete()
+      .eq('user_id', userId)
+      .eq('place_id', placeId));
   },
 
-  // YouTube cache — 30-day TTL, caches null results too (stored as { video: null })
-  getYouTubeCache(placeId) {
-    const data = load();
-    if (!data.youtube_cache) return undefined;
-    const entry = data.youtube_cache.find(e => e.place_id === placeId);
-    if (!entry) return undefined;
+  // ── YouTube cache — 30-day TTL ──
+  async getYouTubeCache(placeId) {
+    const rows = check(await getClient()
+      .from('youtube_cache')
+      .select('*')
+      .eq('place_id', placeId)
+      .limit(1));
+    if (!rows.length) return undefined;
+    const entry = rows[0];
     const ageInDays = (Date.now() - new Date(entry.cached_at).getTime()) / (1000 * 60 * 60 * 24);
     if (ageInDays > 30) return undefined;
     return entry;
   },
 
-  setYouTubeCache(placeId, video) {
-    const data = load();
-    if (!data.youtube_cache) data.youtube_cache = [];
-    data.youtube_cache = data.youtube_cache.filter(e => e.place_id !== placeId);
-    data.youtube_cache.push({ place_id: placeId, video, cached_at: new Date().toISOString() });
-    save(data);
+  async setYouTubeCache(placeId, video) {
+    // video is null or { video_id, title, channel, thumbnail }
+    const payload = {
+      place_id: placeId,
+      video_id: video?.video_id || null,
+      title: video?.title || null,
+      channel: video?.channel || null,
+      thumbnail: video?.thumbnail || null,
+      cached_at: new Date().toISOString()
+    };
+    check(await getClient()
+      .from('youtube_cache')
+      .upsert(payload, { onConflict: 'place_id' }));
   }
 };
 
