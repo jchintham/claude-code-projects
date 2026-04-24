@@ -11,6 +11,28 @@
       50% { box-shadow: 0 0 0 18px rgba(249,115,22,0); }
     }
     .voice-pulse-btn { animation: voicePulse 1.4s ease-out infinite; }
+
+    /* ── Split panel ── */
+    .find-page { max-width: 1400px; }
+    .find-layout { display: flex; gap: 28px; align-items: flex-start; }
+    .find-left {
+      width: 400px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 68px;
+      max-height: calc(100vh - 84px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .find-left::-webkit-scrollbar { width: 4px; }
+    .find-left::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .find-right { flex: 1; min-width: 0; }
+    @media (max-width: 960px) {
+      .find-page { max-width: 900px; }
+      .find-layout { flex-direction: column; }
+      .find-left { width: 100%; position: static; max-height: none; overflow-y: visible; }
+    }
   </style>
 </head>
 <body class="app-shell">
@@ -27,170 +49,180 @@
     </div>
   </nav>
 
-  <main class="page-content">
+  <main class="page-content find-page">
+    <div class="find-layout">
 
-    <!-- ── Follow-up ── -->
-    <div id="followup-state" style="display:none;">
-      <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:24px;">
-        <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;">Welcome back!</h3>
-        <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;">Last time we recommended these places — did you end up visiting any of them?</p>
-        <div id="followup-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;"></div>
-        <button class="btn btn-ghost" onclick="skipFollowUp()">Skip</button>
-      </div>
-    </div>
+      <!-- ══ LEFT: form (always visible) ══ -->
+      <div class="find-left">
 
-    <!-- ── Questionnaire ── -->
-    <div id="questionnaire">
-      <h2 style="margin-bottom:6px;">What are you feeling?</h2>
-      <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px;">Speak your order or fill in below.</p>
+        <!-- Follow-up -->
+        <div id="followup-state" style="display:none;margin-bottom:14px;">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:5px;">Welcome back!</h3>
+            <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">Did you visit any of these last time?</p>
+            <div id="followup-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+            <button class="btn btn-ghost btn-sm" onclick="skipFollowUp()">Skip</button>
+          </div>
+        </div>
 
-      <!-- Voice section -->
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;text-align:center;">
-        <!-- Default -->
-        <div id="voice-default">
-          <button onclick="startVoice()" style="display:inline-flex;align-items:center;gap:10px;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;">
-            <span style="font-size:22px;">🎤</span> Speak your order
+        <!-- Questionnaire -->
+        <div id="questionnaire">
+          <h2 style="font-size:17px;margin-bottom:4px;">What are you feeling?</h2>
+          <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">Speak your order or fill in below.</p>
+
+          <!-- Voice -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;text-align:center;">
+            <div id="voice-default">
+              <button onclick="startVoice()" style="display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;">
+                <span style="font-size:17px;">🎤</span> Speak your order
+              </button>
+              <p style="color:var(--text-muted);font-size:12px;margin-top:8px;line-height:1.4;">Say your meal, vibe, distance, location and craving all at once</p>
+              <p style="color:var(--text-muted);font-size:11px;margin-top:3px;opacity:0.5;">— or fill in below —</p>
+            </div>
+            <div id="voice-listening" style="display:none;">
+              <button onclick="stopVoice()" class="voice-pulse-btn" style="width:58px;height:58px;border-radius:50%;background:var(--orange);border:none;font-size:23px;cursor:pointer;">🎤</button>
+              <p style="font-size:14px;font-weight:600;margin-top:10px;">Listening…</p>
+              <p style="font-size:12px;color:var(--text-muted);">Speak freely, then tap the mic to stop.</p>
+              <p id="voice-interim" style="font-size:12px;color:var(--text);font-style:italic;margin-top:8px;min-height:16px;padding:0 6px;"></p>
+            </div>
+            <div id="voice-result" style="display:none;">
+              <div style="background:var(--orange-light);border:1px solid #3d1f00;border-radius:10px;padding:10px 12px;text-align:left;">
+                <div style="font-size:11px;font-weight:600;color:var(--orange);margin-bottom:3px;">✓ Selections updated — review below</div>
+                <div id="voice-transcript" style="font-size:11px;color:var(--text-muted);font-style:italic;"></div>
+              </div>
+              <button onclick="resetVoice()" style="margin-top:8px;background:none;border:none;color:var(--text-muted);font-size:12px;cursor:pointer;text-decoration:underline;">🎤 Try again</button>
+            </div>
+            <div id="voice-unsupported" style="display:none;">
+              <p style="color:var(--text-muted);font-size:12px;">Voice input requires Chrome or Edge.</p>
+            </div>
+          </div>
+
+          <!-- Q1 -->
+          <div class="question-card" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;margin-bottom:10px;">1. What meal is this?</h3>
+            <div class="option-grid" id="meal-options" style="grid-template-columns:repeat(2,1fr);gap:7px;">
+              <button class="option-btn" data-value="breakfast"><span class="emoji">🌅</span>Breakfast</button>
+              <button class="option-btn" data-value="brunch"><span class="emoji">🥞</span>Brunch</button>
+              <button class="option-btn" data-value="lunch"><span class="emoji">☀️</span>Lunch</button>
+              <button class="option-btn" data-value="dinner"><span class="emoji">🌙</span>Dinner</button>
+              <button class="option-btn" data-value="late night"><span class="emoji">🦉</span>Late night</button>
+              <button class="option-btn" data-value="coffee or snack"><span class="emoji">☕</span>Coffee / snack</button>
+              <button class="option-btn" data-value="happy hour"><span class="emoji">🍹</span>Happy hour</button>
+              <button class="option-btn" data-value="dessert"><span class="emoji">🍰</span>Dessert</button>
+            </div>
+          </div>
+
+          <!-- Q2 -->
+          <div class="question-card" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;margin-bottom:10px;">2. What's the vibe?</h3>
+            <div class="option-grid" id="vibe-options" style="grid-template-columns:repeat(2,1fr);gap:7px;">
+              <button class="option-btn" data-value="quick bite"><span class="emoji">⚡</span>Quick bite</button>
+              <button class="option-btn" data-value="casual"><span class="emoji">😎</span>Casual</button>
+              <button class="option-btn" data-value="date night"><span class="emoji">❤️</span>Date night</button>
+              <button class="option-btn" data-value="business"><span class="emoji">💼</span>Business</button>
+              <button class="option-btn" data-value="group / social"><span class="emoji">🥳</span>Group / social</button>
+              <button class="option-btn" data-value="special occasion"><span class="emoji">🎉</span>Special occasion</button>
+              <button class="option-btn" data-value="family-friendly"><span class="emoji">👨‍👩‍👧</span>Family-friendly</button>
+              <button class="option-btn" data-value="outdoor seating"><span class="emoji">🌿</span>Outdoor seating</button>
+              <button class="option-btn" data-value="solo or work"><span class="emoji">💻</span>Solo / work</button>
+              <button class="option-btn" data-value="trendy new spot"><span class="emoji">✨</span>Trendy / new</button>
+            </div>
+          </div>
+
+          <!-- Q3 -->
+          <div class="question-card" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;margin-bottom:10px;">3. How far are you willing to go?</h3>
+            <div class="option-grid" id="distance-options" style="grid-template-columns:repeat(2,1fr);gap:7px;">
+              <button class="option-btn" data-value="under_1"><span class="emoji">🚶</span>Under 1 mile</button>
+              <button class="option-btn" data-value="under_2_5"><span class="emoji">🚗</span>Under 2.5 miles</button>
+              <button class="option-btn" data-value="under_10"><span class="emoji">🗺️</span>Under 10 miles</button>
+              <button class="option-btn" data-value="under_50"><span class="emoji">✈️</span>Under 50 miles</button>
+            </div>
+          </div>
+
+          <!-- Q4 -->
+          <div class="question-card" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;margin-bottom:10px;">4. Anything specific you're craving? <span style="font-weight:400;color:var(--text-muted)">(optional)</span></h3>
+            <input type="text" id="craving-input" placeholder="e.g. spicy ramen, wood-fired pizza, tacos…" />
+          </div>
+
+          <!-- Location -->
+          <div class="location-picker" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;font-weight:600;margin-bottom:10px;">📍 Your location</h3>
+            <div style="margin-bottom:8px;">
+              <button class="btn btn-outline btn-sm" onclick="useGeolocation()">Use my current location</button>
+            </div>
+            <div style="position:relative;">
+              <input type="text" id="location-input" placeholder="Neighbourhood, city, or address…" autocomplete="off" />
+              <div id="location-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:300;margin-top:4px;max-height:220px;overflow-y:auto;"></div>
+            </div>
+            <p class="location-status" id="location-status"></p>
+          </div>
+
+          <!-- Party size -->
+          <div class="question-card" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;margin-bottom:10px;">Party size</h3>
+            <div class="stepper">
+              <button onclick="changeParty(-1)">−</button>
+              <span class="count" id="party-count">2</span>
+              <button onclick="changeParty(1)">+</button>
+              <span style="font-size:13px;color:var(--text-muted)">people</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="padding:12px;font-size:15px;" onclick="getRecommendations()">
+            Find restaurants
           </button>
-          <p style="color:var(--text-muted);font-size:13px;margin-top:10px;">Say your meal, vibe, distance, location and craving all at once</p>
-          <p style="color:var(--text-muted);font-size:12px;margin-top:4px;opacity:0.5;">— or fill in below —</p>
-        </div>
-        <!-- Listening -->
-        <div id="voice-listening" style="display:none;">
-          <button onclick="stopVoice()" class="voice-pulse-btn" style="width:72px;height:72px;border-radius:50%;background:var(--orange);border:none;font-size:30px;cursor:pointer;">🎤</button>
-          <p style="font-size:16px;font-weight:600;margin-top:14px;">Listening…</p>
-          <p style="font-size:13px;color:var(--text-muted);">Speak freely, then tap the mic to stop.</p>
-          <p id="voice-interim" style="font-size:13px;color:var(--text);font-style:italic;margin-top:10px;min-height:18px;padding:0 12px;"></p>
-        </div>
-        <!-- Result -->
-        <div id="voice-result" style="display:none;">
-          <div style="background:var(--orange-light);border:1px solid #3d1f00;border-radius:10px;padding:14px 18px;text-align:left;">
-            <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px;">✓ Selections updated — review below</div>
-            <div id="voice-transcript" style="font-size:12px;color:var(--text-muted);font-style:italic;"></div>
+          <p class="error-msg" id="form-error"></p>
+
+          <div id="missing-banner" style="display:none;background:var(--card);border:1.5px solid var(--orange);border-radius:var(--radius);padding:14px 16px;margin-top:12px;">
+            <p style="font-size:13px;color:var(--text);">You haven't selected a <strong id="missing-fields-text"></strong>.</p>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:3px;">We'll do our best with what you've provided.</p>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary btn-sm" style="width:auto;" onclick="searchAnyway()">Search anyway</button>
+              <button class="btn btn-ghost btn-sm" onclick="dismissBanner()">Go back</button>
+            </div>
           </div>
-          <button onclick="resetVoice()" style="margin-top:12px;background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;text-decoration:underline;">🎤 Try again</button>
-        </div>
-        <!-- Unsupported -->
-        <div id="voice-unsupported" style="display:none;">
-          <p style="color:var(--text-muted);font-size:13px;">Voice input requires Chrome or Edge. Please fill in below.</p>
         </div>
       </div>
 
-      <!-- Q1: Meal type -->
-      <div class="question-card">
-        <h3>1. What meal is this?</h3>
-        <div class="option-grid" id="meal-options">
-          <button class="option-btn" data-value="breakfast"><span class="emoji">🌅</span>Breakfast</button>
-          <button class="option-btn" data-value="brunch"><span class="emoji">🥞</span>Brunch</button>
-          <button class="option-btn" data-value="lunch"><span class="emoji">☀️</span>Lunch</button>
-          <button class="option-btn" data-value="dinner"><span class="emoji">🌙</span>Dinner</button>
-          <button class="option-btn" data-value="late night"><span class="emoji">🦉</span>Late night</button>
-          <button class="option-btn" data-value="coffee or snack"><span class="emoji">☕</span>Coffee / snack</button>
-          <button class="option-btn" data-value="happy hour"><span class="emoji">🍹</span>Happy hour</button>
-          <button class="option-btn" data-value="dessert"><span class="emoji">🍰</span>Dessert</button>
-        </div>
-      </div>
+      <!-- ══ RIGHT: results / loading / empty ══ -->
+      <div class="find-right">
 
-      <!-- Q2: Vibe -->
-      <div class="question-card">
-        <h3>2. What's the vibe?</h3>
-        <div class="option-grid" id="vibe-options">
-          <button class="option-btn" data-value="quick bite"><span class="emoji">⚡</span>Quick bite</button>
-          <button class="option-btn" data-value="casual"><span class="emoji">😎</span>Casual</button>
-          <button class="option-btn" data-value="date night"><span class="emoji">❤️</span>Date night</button>
-          <button class="option-btn" data-value="business"><span class="emoji">💼</span>Business</button>
-          <button class="option-btn" data-value="group / social"><span class="emoji">🥳</span>Group / social</button>
-          <button class="option-btn" data-value="special occasion"><span class="emoji">🎉</span>Special occasion</button>
-          <button class="option-btn" data-value="family-friendly"><span class="emoji">👨‍👩‍👧</span>Family-friendly</button>
-          <button class="option-btn" data-value="outdoor seating"><span class="emoji">🌿</span>Outdoor seating</button>
-          <button class="option-btn" data-value="solo or work"><span class="emoji">💻</span>Solo / work</button>
-          <button class="option-btn" data-value="trendy new spot"><span class="emoji">✨</span>Trendy / new</button>
-        </div>
-      </div>
-
-      <!-- Q3: Distance -->
-      <div class="question-card">
-        <h3>3. How far are you willing to go?</h3>
-        <div class="option-grid" id="distance-options">
-          <button class="option-btn" data-value="under_1"><span class="emoji">🚶</span>Under 1 mile</button>
-          <button class="option-btn" data-value="under_2_5"><span class="emoji">🚗</span>Under 2.5 miles</button>
-          <button class="option-btn" data-value="under_10"><span class="emoji">🗺️</span>Under 10 miles</button>
-          <button class="option-btn" data-value="under_50"><span class="emoji">✈️</span>Under 50 miles</button>
-        </div>
-      </div>
-
-      <!-- Q4: Craving -->
-      <div class="question-card">
-        <h3>4. Anything specific you're craving? <span style="font-weight:400;color:var(--text-muted)">(optional)</span></h3>
-        <input type="text" id="craving-input" placeholder="e.g. spicy ramen, wood-fired pizza, tacos, seafood pasta…" style="max-width:460px;" />
-      </div>
-
-      <!-- Location -->
-      <div class="location-picker">
-        <h3 style="font-size:16px;font-weight:600;margin-bottom:14px;">📍 Your location</h3>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-          <button class="btn btn-outline btn-sm" onclick="useGeolocation()">Use my current location</button>
-          <span style="align-self:center;color:var(--text-muted);font-size:13px;">or enter manually</span>
-        </div>
-        <div class="location-row" style="position:relative;">
-          <input type="text" id="location-input" placeholder="Neighbourhood, city, or address…" autocomplete="off" />
-          <div id="location-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--card-raised);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:300;margin-top:4px;max-height:220px;overflow-y:auto;"></div>
-        </div>
-        <p class="location-status" id="location-status"></p>
-      </div>
-
-      <!-- Party size -->
-      <div class="question-card">
-        <h3>Party size</h3>
-        <div class="stepper">
-          <button onclick="changeParty(-1)">−</button>
-          <span class="count" id="party-count">2</span>
-          <button onclick="changeParty(1)">+</button>
-          <span style="font-size:13px;color:var(--text-muted)">people</span>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" style="width:auto;padding:13px 36px;font-size:16px;" onclick="getRecommendations()">
-        Find restaurants
-      </button>
-      <p class="error-msg" id="form-error"></p>
-
-      <!-- Missing fields soft warning -->
-      <div id="missing-banner" style="display:none;background:var(--card);border:1.5px solid var(--orange);border-radius:var(--radius);padding:16px 20px;margin-top:16px;">
-        <p style="font-size:14px;color:var(--text);">You haven't selected a <strong id="missing-fields-text"></strong>.</p>
-        <p style="font-size:13px;color:var(--text-muted);margin-top:4px;">We'll do our best with what you've provided.</p>
-        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-          <button class="btn btn-primary" style="width:auto;" onclick="searchAnyway()">Search anyway</button>
-          <button class="btn btn-ghost" onclick="dismissBanner()">Go back</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Loading ── -->
-    <div id="loading-state" style="display:none;">
-      <div class="loading">
-        <div class="spinner"></div>
-        <p>Finding the best spots for you…</p>
-        <p style="font-size:12px;margin-top:8px;color:#a8a29e;">Summarising reviews with AI — this takes ~20 seconds</p>
-      </div>
-    </div>
-
-    <!-- ── Results ── -->
-    <div id="results-state" style="display:none;">
-      <div class="results-header">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-          <div>
-            <h2 id="results-title">Here are your picks</h2>
-            <p id="results-subtitle" style="color:var(--text-muted);font-size:14px;margin-top:4px;"></p>
+        <div id="initial-state" style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+          <div class="empty-state">
+            <div class="icon">🍽️</div>
+            <h3>Ready to find your next meal?</h3>
+            <p>Fill in your preferences and hit <strong>Find restaurants</strong>.</p>
           </div>
-          <button class="btn btn-outline" onclick="reset()">Start over</button>
         </div>
-      </div>
-      <div id="results-list"></div>
-    </div>
 
+        <div id="loading-state" style="display:none;">
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Finding the best spots for you…</p>
+            <p style="font-size:12px;margin-top:8px;color:#a8a29e;">Summarising reviews with AI — this takes ~20 seconds</p>
+          </div>
+        </div>
+
+        <div id="results-state" style="display:none;">
+          <div class="results-header">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+              <div>
+                <h2 id="results-title">Here are your picks</h2>
+                <p id="results-subtitle" style="color:var(--text-muted);font-size:14px;margin-top:4px;"></p>
+              </div>
+              <button class="btn btn-outline" style="width:auto;" onclick="reset()">Start over</button>
+            </div>
+          </div>
+          <div id="results-list"></div>
+        </div>
+
+      </div>
+    </div>
   </main>
 
-  <!-- ── "I've been here" modal ── -->
+  <!-- I've been here modal -->
   <div id="visited-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;padding:20px;">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:28px;width:100%;max-width:460px;">
       <h3 style="margin-bottom:4px;" id="visited-modal-name"></h3>
@@ -226,10 +258,14 @@
     if (!requireAuth()) throw new Error('redirect');
     document.getElementById('greeting').textContent = `Hi, ${getUserName()}`;
 
-    // ── Voice integration ──
+    // ── State (declared early so all functions can reference them) ──
+    let partySize = 2;
+    let locationData = null;
+
+    // ── Voice ──
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
-    let voiceTranscript = '';  // accumulates final results across pauses
+    let voiceTranscript = '';
 
     if (!SpeechRecognition) {
       document.getElementById('voice-default').style.display = 'none';
@@ -237,39 +273,31 @@
     } else {
       recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
-      recognition.continuous = true;      // keep recording through pauses
-      recognition.interimResults = true;  // show live text while speaking
+      recognition.continuous = true;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
 
       recognition.onresult = (e) => {
-        let finalText = '';
-        let interimText = '';
+        let finalText = '', interimText = '';
         for (let i = 0; i < e.results.length; i++) {
-          if (e.results[i].isFinal) {
-            finalText += e.results[i][0].transcript + ' ';
-          } else {
-            interimText += e.results[i][0].transcript;
-          }
+          if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+          else interimText += e.results[i][0].transcript;
         }
         voiceTranscript = finalText.trim();
-        // Show live transcript so the user can see what's being captured
         document.getElementById('voice-interim').textContent =
           (voiceTranscript + (interimText ? ' ' + interimText : '')).trim();
       };
 
       recognition.onerror = (e) => {
-        // Ignore no-speech events in continuous mode — the mic stays open
         if (e.error === 'no-speech') return;
         document.getElementById('voice-listening').style.display = 'none';
         document.getElementById('voice-default').style.display = 'block';
       };
 
       recognition.onend = () => {
-        // Only fires when explicitly stopped — apply the accumulated transcript
         if (document.getElementById('voice-listening').style.display !== 'none') {
-          if (voiceTranscript) {
-            applyVoiceTranscript(voiceTranscript);
-          } else {
+          if (voiceTranscript) applyVoiceTranscript(voiceTranscript);
+          else {
             document.getElementById('voice-listening').style.display = 'none';
             document.getElementById('voice-default').style.display = 'block';
           }
@@ -286,11 +314,7 @@
       document.getElementById('voice-listening').style.display = 'block';
       try { recognition.start(); } catch(e) {}
     }
-
-    function stopVoice() {
-      if (recognition) recognition.stop();
-    }
-
+    function stopVoice() { if (recognition) recognition.stop(); }
     function resetVoice() {
       document.getElementById('voice-result').style.display = 'none';
       document.getElementById('voice-default').style.display = 'block';
@@ -326,7 +350,7 @@
         [/quick|fast|grab|takeout|take.?out/, 'quick bite'],
         [/date.?night|romantic|intimate/, 'date night'],
         [/\bbusiness\b|\bmeeting\b|\bclient\b|\bprofessional\b/, 'business'],
-        [/\bgroup\b|\bfriends\b|\bsocial\b|\bparty\b/, 'group / social'],
+        [/\bgroup\b|\bfriends\b|\bsocial\b/, 'group / social'],
         [/special.?occasion|\bbirthday\b|\banniversary\b|\bcelebrat/, 'special occasion'],
         [/\bfamily\b|\bkids\b|\bchildren\b/, 'family-friendly'],
         [/\boutdoor\b|\boutside\b|\bpatio\b|\bterrace\b/, 'outdoor seating'],
@@ -340,7 +364,7 @@
 
       // Distance
       const distTests = [
-        [/under 1 mile|within 1 mile|1 mile|walking distance/, 'under_1'],
+        [/under 1 mile|within 1 mile|\b1 mile\b|walking distance/, 'under_1'],
         [/under 2|2\.5 mile|within 2 miles/, 'under_2_5'],
         [/under 10|10 mile|within 10/, 'under_10'],
         [/under 50|50 mile|anywhere|far away/, 'under_50'],
@@ -349,25 +373,40 @@
         if (rx.test(t)) { selectOption('distance-options', val); break; }
       }
 
-      // Location — "near X", "in X", "around X"
-      const locMatch = transcript.match(/\b(?:near|in|around|at|by)\s+([A-Za-z0-9][A-Za-z0-9\s,]{2,40?)(?=\s+for|\s+under|\s+within|\s+craving|$)/i);
+      // Location — allow optional "the/a" after trigger; strip trailing filler words
+      const locMatch = transcript.match(
+        /\b(?:near|in|around|at|by)\s+(?:the\s+|a\s+)?([A-Za-z][A-Za-z0-9\s,]{2,50})(?=\s+(?:location|area|neighborhood|spot|for|under|within|craving)|$)/i
+      );
       if (locMatch) {
-        document.getElementById('location-input').value = locMatch[1].trim();
+        let loc = locMatch[1].trim();
+        loc = loc.replace(/\s+(?:location|area|neighborhood|spot)\s*$/i, '').trim();
+        document.getElementById('location-input').value = loc;
         locationData = null;
       }
 
-      // Craving — "craving X" / "I want X" / "looking for X"
-      // Stop before location words or "for [meal type]"
+      // Craving — allow filler words like "specifically like", "like", "something like"
       const cravingMatch = transcript.match(
-        /(?:craving|want|feel like|feeling like|looking for)\s+(?:some\s+)?(.+?)(?=\s+(?:near|in|around|at|by|under|within)|\s+for\s+(?:breakfast|brunch|lunch|dinner|late\s*night|coffee|snack|happy\s*hour|dessert)\b|$)/i
+        /(?:craving|want|feel like|feeling like|looking for)\s+(?:some\s+|specifically\s+like\s+|specifically\s+|like\s+|something\s+like\s+)?(.+?)(?=\s+(?:near|in|around|at|by|under|within)|(?:\s+for\s+(?:breakfast|brunch|lunch|dinner|late\s*night|coffee|snack|happy\s*hour|dessert))\b|$)/i
       );
       if (cravingMatch) {
         let craving = cravingMatch[1].trim();
-        // Strip any trailing "for [meal]" that slipped through
         craving = craving.replace(/\s+for\s+(?:breakfast|brunch|lunch|dinner|late\s*night|coffee|snack|happy\s*hour|dessert)\s*$/i, '').trim();
         document.getElementById('craving-input').value = craving;
       }
 
+      // Party size — "party of two", "for two people", "2 people"
+      const partyWords = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12 };
+      const partyMatch = transcript.match(/\bparty\s+of\s+(\w+)\b|\bfor\s+a?\s*party\s+of\s+(\w+)\b|\bfor\s+(\w+)\s+(?:people|persons|guests)\b/i);
+      if (partyMatch) {
+        const word = (partyMatch[1] || partyMatch[2] || partyMatch[3]).toLowerCase();
+        const size = parseInt(word) || partyWords[word];
+        if (size && size >= 1 && size <= 12) {
+          partySize = size;
+          document.getElementById('party-count').textContent = partySize;
+        }
+      }
+
+      saveFormState();
       document.getElementById('voice-transcript').textContent = `"${transcript}"`;
       document.getElementById('voice-result').style.display = 'block';
     }
@@ -377,23 +416,22 @@
       if (sessionStorage.getItem('fr_followup_done')) return;
       const raw = localStorage.getItem('fr_last_recs');
       if (!raw) return;
-      const { saved_at, restaurants } = JSON.parse(raw);
-      if (!restaurants?.length) return;
-      if ((Date.now() - new Date(saved_at)) / 3600000 < 1) return;
-
-      const list = document.getElementById('followup-list');
-      list.innerHTML = restaurants.map((r, i) => `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;">
-          <div>
-            <div style="font-weight:600;font-size:15px;">${r.name}</div>
-            ${r.address ? `<div style="font-size:12px;color:var(--text-muted);">${r.address}</div>` : ''}
-          </div>
-          <button class="btn btn-outline btn-sm" id="fu-btn-${i}" onclick="logFollowUpVisit(${i})">Yes, I went!</button>
-        </div>
-      `).join('');
-      list._restaurants = restaurants;
-      document.getElementById('followup-state').style.display = 'block';
-      document.getElementById('questionnaire').style.display = 'none';
+      try {
+        const { saved_at, restaurants } = JSON.parse(raw);
+        if (!restaurants?.length) return;
+        if ((Date.now() - new Date(saved_at)) / 3600000 < 1) return;
+        const list = document.getElementById('followup-list');
+        list.innerHTML = restaurants.map((r, i) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1.5px solid var(--border);border-radius:10px;">
+            <div>
+              <div style="font-weight:600;font-size:13px;">${r.name}</div>
+              ${r.address ? `<div style="font-size:11px;color:var(--text-muted);">${r.address}</div>` : ''}
+            </div>
+            <button class="btn btn-outline btn-sm" id="fu-btn-${i}" onclick="logFollowUpVisit(${i})">Yes, I went!</button>
+          </div>`).join('');
+        list._restaurants = restaurants;
+        document.getElementById('followup-state').style.display = 'block';
+      } catch {}
     }
 
     async function logFollowUpVisit(i) {
@@ -410,10 +448,37 @@
       sessionStorage.setItem('fr_followup_done', '1');
       localStorage.removeItem('fr_last_recs');
       document.getElementById('followup-state').style.display = 'none';
-      document.getElementById('questionnaire').style.display = 'block';
     }
 
-    // ── Session persistence ──
+    // ── Form state persistence ──
+    function saveFormState() {
+      sessionStorage.setItem('fr_form_state', JSON.stringify({
+        meal: getSelection('meal-options'),
+        vibe: getSelection('vibe-options'),
+        distance: getSelection('distance-options'),
+        craving: document.getElementById('craving-input').value,
+        location: document.getElementById('location-input').value,
+        locationData,
+        partySize
+      }));
+    }
+
+    function restoreFormState() {
+      const raw = sessionStorage.getItem('fr_form_state');
+      if (!raw) return;
+      try {
+        const s = JSON.parse(raw);
+        if (s.meal) selectOption('meal-options', s.meal);
+        if (s.vibe) selectOption('vibe-options', s.vibe);
+        if (s.distance) selectOption('distance-options', s.distance);
+        if (s.craving) document.getElementById('craving-input').value = s.craving;
+        if (s.location) document.getElementById('location-input').value = s.location;
+        if (s.locationData) locationData = s.locationData;
+        if (s.partySize) { partySize = s.partySize; document.getElementById('party-count').textContent = partySize; }
+      } catch {}
+    }
+
+    // ── Session results persistence ──
     function saveResultsToSession(restaurants, title, subtitle) {
       sessionStorage.setItem('fr_session_results', JSON.stringify({ restaurants, title, subtitle }));
     }
@@ -424,27 +489,31 @@
       try {
         const { restaurants, title, subtitle } = JSON.parse(raw);
         if (!restaurants?.length) return false;
-        document.getElementById('questionnaire').style.display = 'none';
         document.getElementById('results-title').textContent = title || 'Here are your picks';
         document.getElementById('results-subtitle').textContent = subtitle || '';
         renderResults(restaurants);
+        document.getElementById('initial-state').style.display = 'none';
         document.getElementById('results-state').style.display = 'block';
         return true;
       } catch { return false; }
     }
 
+    // ── Init ──
     checkFollowUp();
-    if (!sessionStorage.getItem('fr_followup_done')) restoreSessionResults();
+    restoreFormState();
+    restoreSessionResults();
 
     // ── Party size ──
-    let partySize = 2;
     function changeParty(d) {
       partySize = Math.max(1, Math.min(12, partySize + d));
       document.getElementById('party-count').textContent = partySize;
+      saveFormState();
     }
     apiFetch('/users/profile').then(u => {
-      partySize = u.default_party_size || 2;
-      document.getElementById('party-count').textContent = partySize;
+      if (!sessionStorage.getItem('fr_form_state')) {
+        partySize = u.default_party_size || 2;
+        document.getElementById('party-count').textContent = partySize;
+      }
     }).catch(() => {});
 
     // ── Option buttons ──
@@ -452,6 +521,7 @@
       btn.addEventListener('click', () => {
         btn.closest('.option-grid').querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
+        saveFormState();
       });
     });
 
@@ -461,8 +531,6 @@
     }
 
     // ── Geolocation ──
-    let locationData = null;
-
     function useGeolocation() {
       const status = document.getElementById('location-status');
       status.className = 'location-status';
@@ -479,6 +547,7 @@
           document.getElementById('location-input').placeholder = 'Using your current location';
           status.className = 'location-status ok';
           status.textContent = 'Current location detected.';
+          saveFormState();
         },
         () => {
           status.className = 'location-status err';
@@ -495,6 +564,7 @@
       const dropdown = document.getElementById('location-dropdown');
       input.addEventListener('input', () => {
         locationData = null;
+        saveFormState();
         clearTimeout(locationTimer);
         const val = input.value.trim();
         if (val.length < 2) { dropdown.style.display = 'none'; return; }
@@ -516,6 +586,7 @@
         }, 300);
       });
       input.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
+      document.getElementById('craving-input').addEventListener('input', saveFormState);
     })();
 
     function selectLocationSuggestion(index) {
@@ -526,6 +597,7 @@
       document.getElementById('location-status').textContent = '';
       locationData = null;
       dropdown.style.display = 'none';
+      saveFormState();
     }
 
     // ── Validation & search ──
@@ -543,24 +615,19 @@
       const errorEl = document.getElementById('form-error');
       errorEl.textContent = '';
       document.getElementById('missing-banner').style.display = 'none';
-
       const { meal_type, vibe, distance, craving, manualLocation } = getCurrentFormData();
-
       if (!locationData && !manualLocation) {
         return (errorEl.textContent = 'Please enter your location or use current location.');
       }
-
       const missing = [];
       if (!meal_type) missing.push('meal type');
       if (!vibe) missing.push('vibe');
       if (!distance) missing.push('distance');
-
       if (missing.length > 0) {
         document.getElementById('missing-fields-text').textContent = missing.join(' and ');
         document.getElementById('missing-banner').style.display = 'block';
         return;
       }
-
       await doSearch();
     }
 
@@ -569,15 +636,14 @@
       await doSearch();
     }
 
-    function dismissBanner() {
-      document.getElementById('missing-banner').style.display = 'none';
-    }
+    function dismissBanner() { document.getElementById('missing-banner').style.display = 'none'; }
 
     async function doSearch() {
       const { meal_type, vibe, distance, craving, manualLocation } = getCurrentFormData();
       const location = locationData || { address: manualLocation };
 
-      document.getElementById('questionnaire').style.display = 'none';
+      document.getElementById('initial-state').style.display = 'none';
+      document.getElementById('results-state').style.display = 'none';
       document.getElementById('loading-state').style.display = 'block';
 
       try {
@@ -618,13 +684,14 @@
         document.getElementById('results-state').style.display = 'block';
       } catch (err) {
         document.getElementById('loading-state').style.display = 'none';
-        document.getElementById('questionnaire').style.display = 'block';
+        document.getElementById('initial-state').style.display = 'flex';
         document.getElementById('form-error').textContent = err.message;
       }
     }
 
     function reset() {
       locationData = null;
+      sessionStorage.removeItem('fr_form_state');
       sessionStorage.removeItem('fr_session_results');
       document.getElementById('location-input').value = '';
       document.getElementById('location-input').placeholder = 'Neighbourhood, city, or address…';
@@ -633,9 +700,12 @@
       document.getElementById('form-error').textContent = '';
       document.getElementById('missing-banner').style.display = 'none';
       document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      partySize = 2;
+      document.getElementById('party-count').textContent = partySize;
       document.getElementById('results-state').style.display = 'none';
+      document.getElementById('loading-state').style.display = 'none';
       document.getElementById('results-list').innerHTML = '';
-      document.getElementById('questionnaire').style.display = 'block';
+      document.getElementById('initial-state').style.display = 'flex';
       resetVoice();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -829,8 +899,7 @@
     function renderResults(restaurants) {
       resultRestaurants = restaurants;
       displayedCount = 0;
-      const list = document.getElementById('results-list');
-      list.innerHTML = '';
+      document.getElementById('results-list').innerHTML = '';
       showMoreRestaurants();
     }
 
@@ -840,7 +909,6 @@
       const batch = resultRestaurants.slice(batchStart, batchStart + PAGE_SIZE);
       batch.forEach((r, j) => list.insertAdjacentHTML('beforeend', buildCard(r, batchStart + j)));
       displayedCount += batch.length;
-      // Hydrate YouTube links async — cards are already visible
       hydrateYouTube(resultRestaurants, batchStart, batch.length);
 
       const existing = document.getElementById('see-more-restaurants-btn');
