@@ -18,6 +18,7 @@ async function searchYouTubeVideo(restaurantName, city) {
   try {
     const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
       params: {
+        part: 'snippet',
         q: query,
         type: 'video',
         maxResults: 5,
