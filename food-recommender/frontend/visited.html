@@ -241,9 +241,10 @@
         </div>`;
     }
 
+    const PIN_COLOR = { dining: '#f97316', bars: '#38bdf8', bar: '#38bdf8', coffee: '#fbbf24', cafe: '#fbbf24', bakery: '#f472b6' };
+
     function placeMarker(r, index, position) {
-      const pinColor = (CATEGORY_STYLE[normalizeCategory(r.category)] || CATEGORY_STYLE.dining).pin;
-      console.log('[Crave] pin:', r.name, '| category:', r.category, '| normalized:', normalizeCategory(r.category), '| color:', pinColor);
+      const pinColor = PIN_COLOR[(r.category || '').toLowerCase()] || '#f97316';
       const marker = new google.maps.Marker({
         position,
         map,
