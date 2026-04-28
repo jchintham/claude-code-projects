@@ -53,7 +53,9 @@ const db = {
 
   async addVisited(userId, { place_id, name, address, rating, notes, would_return, category }) {
     const client = getClient();
-    const payload = { place_id, name, address, rating, notes, would_return, category: category || 'dining' };
+    const CAT_NORMALIZE = { bar: 'bars', cafe: 'coffee', restaurant: 'dining' };
+    const normalizedCategory = CAT_NORMALIZE[category] || category || 'dining';
+    const payload = { place_id, name, address, rating, notes, would_return, category: normalizedCategory };
     // Strip undefined so we don't clobber existing values on update
     Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 

@@ -212,8 +212,11 @@
       return '★'.repeat(rating) + '☆'.repeat(5 - rating);
     }
 
+    const CAT_NORMALIZE = { bar: 'bars', cafe: 'coffee', restaurant: 'dining' };
+    function normalizeCategory(c) { return CAT_NORMALIZE[c] || c || 'dining'; }
+
     function renderCard(r, i) {
-      const cat = CATEGORY_STYLE[r.category] || CATEGORY_STYLE.dining;
+      const cat = CATEGORY_STYLE[normalizeCategory(r.category)] || CATEGORY_STYLE.dining;
       return `
         <div class="map-card" id="mcard-${i}" onclick="focusCard(${i})">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
@@ -245,7 +248,7 @@
         title: r.name,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: (CATEGORY_STYLE[r.category] || CATEGORY_STYLE.dining).pin,
+          fillColor: (CATEGORY_STYLE[normalizeCategory(r.category)] || CATEGORY_STYLE.dining).pin,
           fillOpacity: 1,
           strokeColor: '#ffffff',
           strokeWeight: 2,
@@ -299,7 +302,6 @@
       listEl.innerHTML = '<div class="loading" style="padding:30px 20px;"><div class="spinner"></div></div>';
       try {
         const restaurants = await apiFetch('/visited');
-        console.log('[Crave] visited API response categories:', restaurants.map(r => `${r.name}: ${r.category}`));
         visitedRestaurants = restaurants;
 
         // Clear old markers
