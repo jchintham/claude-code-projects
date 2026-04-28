@@ -242,13 +242,15 @@
     }
 
     function placeMarker(r, index, position) {
+      const pinColor = (CATEGORY_STYLE[normalizeCategory(r.category)] || CATEGORY_STYLE.dining).pin;
+      console.log('[Crave] pin:', r.name, '| category:', r.category, '| normalized:', normalizeCategory(r.category), '| color:', pinColor);
       const marker = new google.maps.Marker({
         position,
         map,
         title: r.name,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: (CATEGORY_STYLE[normalizeCategory(r.category)] || CATEGORY_STYLE.dining).pin,
+          fillColor: pinColor,
           fillOpacity: 1,
           strokeColor: '#ffffff',
           strokeWeight: 2,
