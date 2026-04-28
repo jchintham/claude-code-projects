@@ -320,11 +320,11 @@
         // Geocode and place markers
         if (map && geocoder) {
           restaurants.forEach((r, i) => {
-            if (!r.address) return;
-            geocoder.geocode({ address: r.address }, (results, status) => {
+            const query = r.address || r.name;
+            if (!query) return;
+            geocoder.geocode({ address: query }, (results, status) => {
               if (status === 'OK' && results[0]) {
                 placeMarker(r, i, results[0].geometry.location);
-                // Fit once all likely done
                 if (i === restaurants.length - 1) setTimeout(fitMap, 500);
               }
             });
