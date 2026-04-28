@@ -51,28 +51,31 @@ const db = {
       .order('visited_at', { ascending: false }));
   },
 
-  async addVisited(userId, restaurant) {
+  async addVisited(userId, { place_id, name, address, rating, notes, would_return, category }) {
     const client = getClient();
-    // Check if already exists
+    const payload = { place_id, name, address, rating, notes, would_return, category: category || 'dining' };
+    // Strip undefined so we don't clobber existing values on update
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
     const existing = check(await client
       .from('visited_restaurants')
       .select('id')
       .eq('user_id', userId)
-      .eq('place_id', restaurant.place_id)
+      .eq('place_id', place_id)
       .limit(1));
 
     if (existing.length) {
       const rows = check(await client
         .from('visited_restaurants')
-        .update({ ...restaurant, updated_at: new Date().toISOString() })
+        .update({ ...payload, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
-        .eq('place_id', restaurant.place_id)
+        .eq('place_id', place_id)
         .select());
       return rows[0];
     } else {
       const rows = check(await client
         .from('visited_restaurants')
-        .insert({ user_id: userId, ...restaurant })
+        .insert({ user_id: userId, ...payload })
         .select());
       return rows[0];
     }

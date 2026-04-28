@@ -11,17 +11,25 @@ async function geocodeAddress(address) {
   return res.data.results[0].geometry.location; // { lat, lng }
 }
 
-async function searchRestaurants({ lat, lng, query, radius }) {
+const CATEGORY_TYPE = {
+  dining: { type: 'restaurant', suffix: 'restaurant' },
+  bars:   { type: 'bar',        suffix: 'bar'        },
+  coffee: { type: 'cafe',       suffix: 'cafe'       },
+  bakery: { type: 'bakery',     suffix: 'bakery'     }
+};
+
+async function searchRestaurants({ lat, lng, query, radius, category }) {
+  const { type, suffix } = CATEGORY_TYPE[category] || CATEGORY_TYPE.dining;
   const res = await axios.get(`${BASE}/textsearch/json`, {
     params: {
-      query: `${query} restaurant`,
+      query: `${query} ${suffix}`.trim(),
       location: `${lat},${lng}`,
       radius: radius || 5000,
-      type: 'restaurant',
+      type,
       key: KEY()
     }
   });
-  return res.data.results.slice(0, 10);
+  return res.data.results.slice(0, 20);
 }
 
 async function getPlaceDetails(placeId) {

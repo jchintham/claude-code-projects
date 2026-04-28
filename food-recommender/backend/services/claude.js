@@ -49,13 +49,22 @@ async function summarizeAndScore(restaurant, session, userProfile, visitedHistor
   const cuisinePrefs = (userProfile.cuisine_preferences || []).join(', ') || 'No preference';
   const cravingText = session.craving || null;
 
-  const prompt = `You are a food recommendation assistant. Analyse the data below and return a JSON summary.
+  const CATEGORY_FOCUS = {
+    dining: 'Focus on food quality, standout dishes, and dining atmosphere.',
+    bars:   'Focus on drink selection (cocktails, wine, beer), bar atmosphere, and service. Mention standout drinks or house specialties. Food is secondary.',
+    coffee: 'Focus on coffee/tea quality, pastry or food offerings, and atmosphere (e.g. good for working, cozy, lively). Mention signature drinks.',
+    bakery: 'Focus on baked goods, pastry quality, specialty items, and the overall sweet/dessert experience.'
+  };
+  const categoryFocus = CATEGORY_FOCUS[session.category] || CATEGORY_FOCUS.dining;
+  const categoryLabel = { dining: 'restaurant', bars: 'bar or drinking establishment', coffee: 'café or coffee shop', bakery: 'bakery or dessert shop' }[session.category] || 'restaurant';
+
+  const prompt = `You are a food and drink recommendation assistant. Analyse the data below and return a JSON summary.
 
 USER DIETARY CONTEXT: ${dietaryContext}
 USER CUISINE PREFERENCES: ${cuisinePrefs}
 ${visitedSection}
 SESSION:
-- Meal: ${session.meal_type} | Vibe: ${session.vibe} | Craving: ${cravingText || 'not specified'}
+- Category: ${categoryLabel} | Meal: ${session.meal_type} | Vibe: ${session.vibe} | Craving: ${cravingText || 'not specified'}
 
 RESTAURANT: ${restaurant.name}
 Type: ${(restaurant.types || []).filter(t => !['establishment','point_of_interest','food'].includes(t)).join(', ')}
@@ -66,7 +75,7 @@ ${reviews}
 
 Return ONLY a raw JSON object — no markdown, no code fences, nothing else:
 {
-  "summary": "2-3 sentences. Cover dining experience and atmosphere. ${cravingText ? `The user is craving "${cravingText}" — explicitly address whether this restaurant satisfies that (e.g. if they want a hole-in-the-wall, say whether it fits that vibe; if they want spicy ramen, say whether it's known for that).` : ''} ${cuisinePrefs !== 'No preference' ? `If the cuisine aligns with the user's preferences (${cuisinePrefs}), briefly note it.` : ''} If the user has visited similar restaurants, mention the similarity.",
+  "summary": "2-3 sentences. ${categoryFocus} ${cravingText ? `The user is craving/looking for "${cravingText}" — explicitly address whether this place satisfies that.` : ''} ${cuisinePrefs !== 'No preference' ? `If the cuisine aligns with the user's preferences (${cuisinePrefs}), briefly note it.` : ''} If the user has visited similar places, mention the similarity.",
   "popular_dishes": ["Exact Dish Name", "Exact Dish Name", "Exact Dish Name"],
   "dietary_dishes": ${hasDietaryRestrictions ? '["Exact Dish Name", ...]' : '[]'},
   "dietary_notes": "One sentence on how this place suits the user's dietary context, or null if no restrictions",

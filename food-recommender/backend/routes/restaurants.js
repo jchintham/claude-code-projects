@@ -30,7 +30,7 @@ function detectReservationPlatform(reservationsUrl, website) {
 
 router.post('/recommend', requireAuth, async (req, res) => {
   try {
-    const { meal_type, vibe, distance, craving, location, party_size, date_time } = req.body;
+    const { meal_type, vibe, distance, craving, location, party_size, date_time, category } = req.body;
 
     const userRow = await db.findUserById(req.userId);
     const userProfile = {
@@ -66,7 +66,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
 
     const searchQuery = [searchCraving || cuisineBias, meal_type].filter(Boolean).join(' ') || 'restaurant';
 
-    const candidates = await searchRestaurants({ lat: coords.lat, lng: coords.lng, query: searchQuery, radius });
+    const candidates = await searchRestaurants({ lat: coords.lat, lng: coords.lng, query: searchQuery, radius, category });
     if (!candidates.length) {
       return res.json({ restaurants: [] });
     }
@@ -114,7 +114,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
           yelp_rating: yelpBiz?.rating || null
         };
 
-        const session = { meal_type, vibe, craving, party_size: seats };
+        const session = { meal_type, vibe, craving, party_size: seats, category: category || 'dining' };
         const ai = await summarizeAndScore(restaurantData, session, userProfile, visitedHistory, menuText);
 
         // Extract city for reservation links
@@ -153,6 +153,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
           popular_dishes: ai.popular_dishes || [],
           dietary_dishes: ai.dietary_dishes || [],
           dietary_notes: ai.dietary_notes || null,
+          category: category || 'dining',
           criteria_unmet: ai.criteria_unmet || [],
           reservations
         };

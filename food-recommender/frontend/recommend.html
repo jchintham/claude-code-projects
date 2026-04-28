@@ -42,8 +42,8 @@
       <span>Crave<span style="color:var(--orange)">.</span></span>
     </div>
     <div class="topbar-nav">
-      <a href="/recommend.html" class="btn btn-ghost active">Find restaurants</a>
-      <a href="/visited.html" class="btn btn-ghost">My restaurants</a>
+      <a href="/recommend.html" class="btn btn-ghost active">Find places</a>
+      <a href="/visited.html" class="btn btn-ghost">My places</a>
       <a href="/profile.html" class="btn btn-ghost" id="greeting"></a>
       <button class="btn btn-ghost" onclick="logout()">Sign out</button>
     </div>
@@ -97,9 +97,20 @@
             </div>
           </div>
 
+          <!-- Category -->
+          <div class="question-card" style="padding:16px;margin-bottom:10px;">
+            <h3 style="font-size:13px;margin-bottom:10px;">What are you looking for?</h3>
+            <div class="option-grid" id="category-options" style="grid-template-columns:repeat(4,1fr);gap:7px;">
+              <button class="option-btn" data-value="dining"><span class="emoji">🍽️</span>Dining</button>
+              <button class="option-btn" data-value="bars"><span class="emoji">🍸</span>Bars</button>
+              <button class="option-btn" data-value="coffee"><span class="emoji">☕</span>Coffee</button>
+              <button class="option-btn" data-value="bakery"><span class="emoji">🧁</span>Bakery</button>
+            </div>
+          </div>
+
           <!-- Q1 -->
           <div class="question-card" style="padding:16px;margin-bottom:10px;">
-            <h3 style="font-size:13px;margin-bottom:10px;">1. What meal is this?</h3>
+            <h3 id="meal-label" style="font-size:13px;margin-bottom:10px;">1. What meal is this?</h3>
             <div class="option-grid" id="meal-options" style="grid-template-columns:repeat(2,1fr);gap:7px;">
               <button class="option-btn" data-value="breakfast"><span class="emoji">🌅</span>Breakfast</button>
               <button class="option-btn" data-value="brunch"><span class="emoji">🥞</span>Brunch</button>
@@ -442,7 +453,7 @@
       const r = document.getElementById('followup-list')._restaurants?.[i];
       if (!r) return;
       try {
-        await apiFetch('/visited', { method: 'POST', body: JSON.stringify({ place_id: r.place_id, name: r.name, address: r.address }) });
+        await apiFetch('/visited', { method: 'POST', body: JSON.stringify({ place_id: r.place_id, name: r.name, address: r.address, category: r.category }) });
         const btn = document.getElementById(`fu-btn-${i}`);
         if (btn) { btn.textContent = '✓ Logged'; btn.disabled = true; btn.style.color = 'var(--green)'; btn.style.borderColor = 'var(--green)'; }
       } catch {}
@@ -457,6 +468,7 @@
     // ── Form state persistence ──
     function saveFormState() {
       sessionStorage.setItem('fr_form_state', JSON.stringify({
+        category: getSelection('category-options'),
         meal: getSelection('meal-options'),
         vibe: getSelection('vibe-options'),
         distance: getSelection('distance-options'),
@@ -472,6 +484,7 @@
       if (!raw) return;
       try {
         const s = JSON.parse(raw);
+        if (s.category) { selectOption('category-options', s.category); applyCategoryConfig(s.category); }
         if (s.meal) selectOption('meal-options', s.meal);
         if (s.vibe) selectOption('vibe-options', s.vibe);
         if (s.distance) selectOption('distance-options', s.distance);
@@ -520,11 +533,57 @@
       }
     }).catch(() => {});
 
+    // ── Category config ──
+    const CATEGORY_CONFIG = {
+      dining: {
+        meals: ['breakfast','brunch','lunch','dinner','late night','coffee or snack','happy hour','dessert'],
+        vibes: ['quick bite','casual','date night','business','group / social','special occasion','family-friendly','outdoor seating','solo or work','trendy new spot'],
+        mealLabel: '1. What meal is this?',
+        cravingPlaceholder: 'e.g. spicy ramen, wood-fired pizza, tacos…'
+      },
+      bars: {
+        meals: ['happy hour','dinner','late night'],
+        vibes: ['casual','date night','business','group / social','special occasion','outdoor seating','solo or work','trendy new spot'],
+        mealLabel: '1. When are you going?',
+        cravingPlaceholder: 'e.g. craft cocktails, natural wine, local draft beers…'
+      },
+      coffee: {
+        meals: ['breakfast','brunch','coffee or snack'],
+        vibes: ['quick bite','casual','solo or work','outdoor seating','group / social','trendy new spot'],
+        mealLabel: '1. When are you going?',
+        cravingPlaceholder: 'e.g. pour-over, matcha latte, cortado…'
+      },
+      bakery: {
+        meals: ['breakfast','brunch','coffee or snack','dessert'],
+        vibes: ['quick bite','casual','date night','outdoor seating','group / social','special occasion','trendy new spot'],
+        mealLabel: '1. When are you going?',
+        cravingPlaceholder: 'e.g. croissants, sourdough, birthday cake…'
+      }
+    };
+
+    function applyCategoryConfig(category) {
+      const config = CATEGORY_CONFIG[category];
+      if (!config) return;
+      document.querySelectorAll('#meal-options .option-btn').forEach(btn => {
+        const show = config.meals.includes(btn.dataset.value);
+        btn.style.display = show ? '' : 'none';
+        if (!show) btn.classList.remove('selected');
+      });
+      document.querySelectorAll('#vibe-options .option-btn').forEach(btn => {
+        const show = config.vibes.includes(btn.dataset.value);
+        btn.style.display = show ? '' : 'none';
+        if (!show) btn.classList.remove('selected');
+      });
+      document.getElementById('meal-label').textContent = config.mealLabel;
+      document.getElementById('craving-input').placeholder = config.cravingPlaceholder;
+    }
+
     // ── Option buttons ──
     document.querySelectorAll('.option-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         btn.closest('.option-grid').querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
+        if (btn.closest('#category-options')) applyCategoryConfig(btn.dataset.value);
         saveFormState();
       });
     });
@@ -607,6 +666,7 @@
     // ── Validation & search ──
     function getCurrentFormData() {
       return {
+        category: getSelection('category-options') || 'dining',
         meal_type: getSelection('meal-options'),
         vibe: getSelection('vibe-options'),
         distance: getSelection('distance-options'),
@@ -643,7 +703,7 @@
     function dismissBanner() { document.getElementById('missing-banner').style.display = 'none'; }
 
     async function doSearch() {
-      const { meal_type, vibe, distance, craving, manualLocation } = getCurrentFormData();
+      const { category, meal_type, vibe, distance, craving, manualLocation } = getCurrentFormData();
       const location = locationData || { address: manualLocation };
 
       document.getElementById('initial-state').style.display = 'none';
@@ -653,7 +713,7 @@
       try {
         const data = await apiFetch('/restaurants/recommend', {
           method: 'POST',
-          body: JSON.stringify({ meal_type, vibe, distance, craving, location, party_size: partySize })
+          body: JSON.stringify({ category, meal_type, vibe, distance, craving, location, party_size: partySize })
         });
 
         document.getElementById('loading-state').style.display = 'none';
@@ -661,7 +721,7 @@
         if (data.restaurants?.length) {
           localStorage.setItem('fr_last_recs', JSON.stringify({
             saved_at: new Date().toISOString(),
-            restaurants: data.restaurants.map(r => ({ place_id: r.place_id, name: r.name, address: r.address }))
+            restaurants: data.restaurants.map(r => ({ place_id: r.place_id, name: r.name, address: r.address, category: r.category }))
           }));
           sessionStorage.setItem('fr_followup_done', '1');
         }
@@ -703,7 +763,9 @@
       document.getElementById('craving-input').value = '';
       document.getElementById('form-error').textContent = '';
       document.getElementById('missing-banner').style.display = 'none';
-      document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      document.querySelectorAll('.option-btn').forEach(b => { b.classList.remove('selected'); b.style.display = ''; });
+      document.getElementById('meal-label').textContent = '1. What meal is this?';
+      document.getElementById('craving-input').placeholder = 'e.g. spicy ramen, wood-fired pizza, tacos…';
       partySize = 2;
       document.getElementById('party-count').textContent = partySize;
       document.getElementById('results-state').style.display = 'none';
@@ -777,7 +839,8 @@
             place_id: r.place_id, name: r.name, address: r.address,
             rating: modalRating,
             notes: document.getElementById('modal-notes').value.trim(),
-            would_return: modalReturn
+            would_return: modalReturn,
+            category: r.category
           })
         });
         visitedPlaceIds.add(r.place_id);
