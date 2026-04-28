@@ -202,16 +202,16 @@
 
         <div id="initial-state" style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
           <div class="empty-state">
-            <div class="icon">🍽️</div>
-            <h3>Ready to find your next meal?</h3>
-            <p>Fill in your preferences and hit <strong>Find restaurants</strong>.</p>
+            <div class="icon" id="empty-icon">🔍</div>
+            <h3 id="empty-title">Ready to find your next spot?</h3>
+            <p id="empty-body">Pick a category and fill in your preferences, then hit <strong>Find places</strong>.</p>
           </div>
         </div>
 
         <div id="loading-state" style="display:none;">
           <div class="loading">
             <div class="spinner"></div>
-            <p>Finding the best spots for you…</p>
+            <p id="loading-msg">Finding the best spots for you…</p>
             <p style="font-size:12px;margin-top:8px;color:#a8a29e;">Summarising reviews with AI — this takes ~20 seconds</p>
           </div>
         </div>
@@ -561,6 +561,13 @@
       }
     };
 
+    const CATEGORY_EMPTY = {
+      dining: { icon: '🍽️', title: 'Ready to find your next meal?',    body: 'Fill in your preferences and hit <strong>Find places</strong>.' },
+      bars:   { icon: '🍸', title: 'Ready to find a great bar?',         body: 'Fill in your preferences and hit <strong>Find places</strong>.' },
+      coffee: { icon: '☕', title: 'Looking for your next coffee spot?', body: 'Fill in your preferences and hit <strong>Find places</strong>.' },
+      bakery: { icon: '🧁', title: 'Craving something sweet?',           body: 'Fill in your preferences and hit <strong>Find places</strong>.' }
+    };
+
     function applyCategoryConfig(category) {
       const config = CATEGORY_CONFIG[category];
       if (!config) return;
@@ -576,6 +583,12 @@
       });
       document.getElementById('meal-label').textContent = config.mealLabel;
       document.getElementById('craving-input').placeholder = config.cravingPlaceholder;
+      const empty = CATEGORY_EMPTY[category];
+      if (empty) {
+        document.getElementById('empty-icon').textContent = empty.icon;
+        document.getElementById('empty-title').textContent = empty.title;
+        document.getElementById('empty-body').innerHTML = empty.body;
+      }
     }
 
     // ── Option buttons ──
@@ -737,8 +750,8 @@
 
         if (!data.restaurants.length) {
           document.getElementById('results-list').innerHTML = `
-            <div class="empty-state"><div class="icon">🍽️</div>
-              <h3>No restaurants found</h3>
+            <div class="empty-state"><div class="icon">🔍</div>
+              <h3>No places found</h3>
               <p>Try increasing your distance or changing the criteria.</p>
             </div>`;
         } else {
