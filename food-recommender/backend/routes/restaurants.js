@@ -55,7 +55,16 @@ router.post('/recommend', requireAuth, async (req, res) => {
     const vagueTerms = ['surprise me', 'anything', 'whatever', 'any', 'random', 'surprise', 'anything goes', 'no preference'];
     const cravingIsVague = !craving || vagueTerms.some(t => craving.toLowerCase().includes(t));
     const searchCraving = cravingIsVague ? '' : craving;
-    const searchQuery = [searchCraving, meal_type].filter(Boolean).join(' ') || 'restaurant';
+
+    // When no specific craving, bias the search with a randomly-picked cuisine preference
+    // so repeated searches explore different parts of the user's taste profile
+    let cuisineBias = '';
+    if (cravingIsVague && userProfile.cuisine_preferences?.length > 0) {
+      const prefs = [...userProfile.cuisine_preferences];
+      cuisineBias = prefs[Math.floor(Math.random() * prefs.length)];
+    }
+
+    const searchQuery = [searchCraving || cuisineBias, meal_type].filter(Boolean).join(' ') || 'restaurant';
 
     const candidates = await searchRestaurants({ lat: coords.lat, lng: coords.lng, query: searchQuery, radius });
     if (!candidates.length) {

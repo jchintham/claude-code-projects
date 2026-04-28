@@ -77,7 +77,7 @@ Rules:
 - popular_dishes: If menu data is available, extract real dish names directly from the menu. Otherwise use dishes mentioned in reviews. Write in Title Case (e.g. "Truffle Pasta", "Spicy Tuna Roll"). List up to 5.
 - dietary_dishes: ${hasDietaryRestrictions ? `List up to 8 dishes that are suitable for the user's dietary restrictions (${dietaryContext}). Prefer menu data over reviews. Use exact menu names in Title Case. Empty array if none found.` : 'Always return empty array since user has no restrictions.'}
 - dietary_notes: Be specific about which menu items or preparation styles suit the user's needs.
-- criteria_unmet: Only flag something as unmet if you have clear evidence (e.g. reviews/menu confirm no vegan options, reviews say it's very upscale when user wants casual). Do not flag things as unmet just because you lack evidence.`;
+- criteria_unmet: Only flag something as unmet if you have clear evidence (e.g. reviews/menu confirm no vegan options, reviews say it's very upscale when user wants casual). Do not flag things as unmet just because you lack evidence. ${cuisinePrefs !== 'No preference' ? `If the restaurant's cuisine clearly falls outside ALL of the user's preferences (${cuisinePrefs}), add "Outside your cuisine preferences" to criteria_unmet.` : ''}`;
 
   try {
     const message = await getClient().messages.create({
