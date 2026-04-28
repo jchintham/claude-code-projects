@@ -299,6 +299,7 @@
       listEl.innerHTML = '<div class="loading" style="padding:30px 20px;"><div class="spinner"></div></div>';
       try {
         const restaurants = await apiFetch('/visited');
+        console.log('[Crave] visited API response categories:', restaurants.map(r => `${r.name}: ${r.category}`));
         visitedRestaurants = restaurants;
 
         // Clear old markers
