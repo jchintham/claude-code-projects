@@ -64,7 +64,7 @@
     <div class="topbar-nav">
       <a href="/recommend.html" class="btn btn-ghost">Find restaurants</a>
       <a href="/visited.html" class="btn btn-ghost active">My restaurants</a>
-      <a href="/profile.html" class="btn btn-ghost">Profile</a>
+      <a href="/profile.html" class="btn btn-ghost" id="greeting">Profile</a>
       <button class="btn btn-ghost" onclick="logout()">Sign out</button>
     </div>
   </nav>
@@ -131,6 +131,7 @@
   <script src="/js/api.js"></script>
   <script>
     if (!requireAuth()) throw new Error('redirect');
+    document.getElementById('greeting').textContent = `Hi, ${getUserName()}`;
 
     let visitedRestaurants = [];
     let selectedRating = null;

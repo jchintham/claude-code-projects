@@ -829,8 +829,19 @@
 
     // ── Render results ──
     function buildCard(r, i) {
+      const PLATFORM_LOGOS = {
+        opentable: `<img src="https://www.google.com/s2/favicons?sz=32&domain=opentable.com" width="20" height="20" alt="OpenTable" style="display:block;" />`,
+        resy:      `<img src="https://www.google.com/s2/favicons?sz=32&domain=resy.com"      width="20" height="20" alt="Resy"      style="display:block;" />`,
+        tock:      `<img src="https://www.google.com/s2/favicons?sz=32&domain=exploretock.com" width="20" height="20" alt="Tock" style="display:block;" />`,
+        yelp:      `<img src="https://www.google.com/s2/favicons?sz=32&domain=yelp.com"      width="20" height="20" alt="Yelp"      style="display:block;" />`
+      };
       const reservationBtns = (r.reservations || [])
-        .map(res => `<a href="${res.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${res.label}</a>`)
+        .map(res => {
+          const logo = PLATFORM_LOGOS[res.type];
+          return logo
+            ? `<a href="${res.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" title="${res.label}" style="padding:6px 10px;line-height:1;">${logo}</a>`
+            : `<a href="${res.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${res.label}</a>`;
+        })
         .join('');
       const phoneEl = r.phone
         ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
@@ -883,9 +894,16 @@
           ${dietaryDishesHtml}
           ${r.dietary_notes ? `<div class="dietary-note"><span>🥗</span><span>${r.dietary_notes}</span></div>` : ''}
           <div id="yt-${i}" style="margin-bottom:10px;"></div>
+          ${r.criteria_unmet?.length ? `
+          <div style="margin-bottom:12px;">
+            <button class="btn btn-ghost btn-sm" style="color:#f87171;border-color:#3f1515;padding:4px 10px;font-size:12px;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'flex':'none';this.textContent=this.textContent.startsWith('▶')?'▼ Criteria not fully met':'▶ Criteria not fully met'">▶ Criteria not fully met</button>
+            <div style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px;">
+              ${r.criteria_unmet.map(c => `<span style="font-size:12px;background:#1a0505;border:1px solid #3f1515;color:#f87171;border-radius:20px;padding:3px 10px;">${c}</span>`).join('')}
+            </div>
+          </div>` : ''}
           <div class="card-actions">
             ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
-            <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🗺️ Google Maps</a>
+            <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" title="Google Maps" style="padding:6px 10px;line-height:1;"><img src="https://www.google.com/s2/favicons?sz=32&domain=maps.google.com" width="20" height="20" alt="Google Maps" style="display:block;" /></a>
             ${reservationBtns}
             ${phoneEl}
             <span id="visited-action-${i}">

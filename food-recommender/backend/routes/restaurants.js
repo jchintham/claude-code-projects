@@ -62,6 +62,12 @@ router.post('/recommend', requireAuth, async (req, res) => {
       return res.json({ restaurants: [] });
     }
 
+    // Shuffle candidates so repeated searches return varied results
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+
     const seats = party_size || userRow.default_party_size || 2;
     const date = date_time ? date_time.split('T')[0] : new Date().toISOString().split('T')[0];
 
@@ -138,6 +144,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
           popular_dishes: ai.popular_dishes || [],
           dietary_dishes: ai.dietary_dishes || [],
           dietary_notes: ai.dietary_notes || null,
+          criteria_unmet: ai.criteria_unmet || [],
           reservations
         };
       } catch (err) {
