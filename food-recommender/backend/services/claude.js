@@ -46,7 +46,14 @@ async function summarizeAndScore(restaurant, session, userProfile, visitedHistor
     ? `\nMENU DATA (scraped from restaurant website — prefer this over reviews for dish names):\n${menuText}\n`
     : '';
 
-  const cuisinePrefs = (userProfile.cuisine_preferences || []).join(', ') || 'No preference';
+  const PREF_MAP = {
+    dining: { label: 'Cuisine Preferences',              prefs: userProfile.cuisine_preferences  || [] },
+    bars:   { label: 'Drink & Bar Preferences',          prefs: userProfile.drink_preferences    || [] },
+    coffee: { label: 'Coffee & Tea Preferences',         prefs: userProfile.coffee_preferences   || [] },
+    bakery: { label: 'Bakery & Dessert Preferences',     prefs: userProfile.bakery_preferences   || [] }
+  };
+  const { label: prefLabel, prefs: categoryPrefs } = PREF_MAP[session.category] || PREF_MAP.dining;
+  const categoryPrefsStr = categoryPrefs.join(', ') || 'No preference';
   const cravingText = session.craving || null;
 
   const CATEGORY_FOCUS = {
@@ -61,7 +68,7 @@ async function summarizeAndScore(restaurant, session, userProfile, visitedHistor
   const prompt = `You are a food and drink recommendation assistant. Analyse the data below and return a JSON summary.
 
 USER DIETARY CONTEXT: ${dietaryContext}
-USER CUISINE PREFERENCES: ${cuisinePrefs}
+USER ${prefLabel.toUpperCase()}: ${categoryPrefsStr}
 ${visitedSection}
 SESSION:
 - Category: ${categoryLabel} | Meal: ${session.meal_type} | Vibe: ${session.vibe} | Craving: ${cravingText || 'not specified'}
@@ -75,7 +82,7 @@ ${reviews}
 
 Return ONLY a raw JSON object — no markdown, no code fences, nothing else:
 {
-  "summary": "2-3 sentences. ${categoryFocus} ${cravingText ? `The user is craving/looking for "${cravingText}" — explicitly address whether this place satisfies that.` : ''} ${cuisinePrefs !== 'No preference' ? `If the cuisine aligns with the user's preferences (${cuisinePrefs}), briefly note it.` : ''} If the user has visited similar places, mention the similarity.",
+  "summary": "2-3 sentences. ${categoryFocus} ${cravingText ? `The user is craving/looking for "${cravingText}" — explicitly address whether this place satisfies that.` : ''} ${categoryPrefs.length > 0 ? `If this place aligns with the user's ${prefLabel.toLowerCase()} (${categoryPrefsStr}), note it.` : ''} If the user has visited similar places, mention the similarity.",
   "popular_dishes": ["Exact Dish Name", "Exact Dish Name", "Exact Dish Name"],
   "dietary_dishes": ${hasDietaryRestrictions ? '["Exact Dish Name", ...]' : '[]'},
   "dietary_notes": "One sentence on how this place suits the user's dietary context, or null if no restrictions",
@@ -86,7 +93,7 @@ Rules:
 - popular_dishes: If menu data is available, extract real dish names directly from the menu. Otherwise use dishes mentioned in reviews. Write in Title Case (e.g. "Truffle Pasta", "Spicy Tuna Roll"). List up to 5.
 - dietary_dishes: ${hasDietaryRestrictions ? `List up to 8 dishes that are suitable for the user's dietary restrictions (${dietaryContext}). Prefer menu data over reviews. Use exact menu names in Title Case. Empty array if none found.` : 'Always return empty array since user has no restrictions.'}
 - dietary_notes: Be specific about which menu items or preparation styles suit the user's needs.
-- criteria_unmet: Only flag something as unmet if you have clear evidence (e.g. reviews/menu confirm no vegan options, reviews say it's very upscale when user wants casual). Do not flag things as unmet just because you lack evidence. ${cuisinePrefs !== 'No preference' ? `If the restaurant's cuisine clearly falls outside ALL of the user's preferences (${cuisinePrefs}), add "Outside your cuisine preferences" to criteria_unmet.` : ''}`;
+- criteria_unmet: Only flag something as unmet if you have clear evidence (e.g. reviews/menu confirm no vegan options, reviews say it's very upscale when user wants casual). Do not flag things as unmet just because you lack evidence. ${categoryPrefs.length > 0 ? `If this place clearly falls outside ALL of the user's ${prefLabel.toLowerCase()} (${categoryPrefsStr}), add "Outside your preferences" to criteria_unmet.` : ''}`;
 
   try {
     const message = await getClient().messages.create({

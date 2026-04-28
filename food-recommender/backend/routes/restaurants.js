@@ -36,7 +36,10 @@ router.post('/recommend', requireAuth, async (req, res) => {
     const userProfile = {
       dietary_restrictions: userRow.dietary_restrictions,
       dietary_notes: userRow.dietary_notes || null,
-      cuisine_preferences: userRow.cuisine_preferences
+      cuisine_preferences:  userRow.cuisine_preferences  || [],
+      drink_preferences:    userRow.drink_preferences    || [],
+      coffee_preferences:   userRow.coffee_preferences   || [],
+      bakery_preferences:   userRow.bakery_preferences   || []
     };
 
     const visitedHistory = (await db.getVisited(req.userId)).slice(0, 10);
@@ -56,15 +59,22 @@ router.post('/recommend', requireAuth, async (req, res) => {
     const cravingIsVague = !craving || vagueTerms.some(t => craving.toLowerCase().includes(t));
     const searchCraving = cravingIsVague ? '' : craving;
 
-    // When no specific craving, bias the search with a randomly-picked cuisine preference
-    // so repeated searches explore different parts of the user's taste profile
-    let cuisineBias = '';
-    if (cravingIsVague && userProfile.cuisine_preferences?.length > 0) {
-      const prefs = [...userProfile.cuisine_preferences];
-      cuisineBias = prefs[Math.floor(Math.random() * prefs.length)];
+    // When no specific craving, bias the search with a randomly-picked category-specific preference
+    const categoryPrefsMap = {
+      dining: userProfile.cuisine_preferences,
+      bars:   userProfile.drink_preferences,
+      coffee: userProfile.coffee_preferences,
+      bakery: userProfile.bakery_preferences
+    };
+    const activeCategoryPrefs = categoryPrefsMap[category] || userProfile.cuisine_preferences;
+
+    let prefBias = '';
+    if (cravingIsVague && activeCategoryPrefs?.length > 0) {
+      const prefs = [...activeCategoryPrefs];
+      prefBias = prefs[Math.floor(Math.random() * prefs.length)];
     }
 
-    const searchQuery = [searchCraving || cuisineBias, meal_type].filter(Boolean).join(' ') || 'restaurant';
+    const searchQuery = [searchCraving || prefBias, meal_type].filter(Boolean).join(' ') || 'restaurant';
 
     const candidates = await searchRestaurants({ lat: coords.lat, lng: coords.lng, query: searchQuery, radius, category });
     if (!candidates.length) {

@@ -78,9 +78,9 @@
       </div>
     </div>
 
-    <!-- Cuisine preferences -->
+    <!-- Dining / cuisine preferences -->
     <div class="profile-section">
-      <h3>Cuisine preferences</h3>
+      <h3>Dining preferences <span style="font-weight:400;color:var(--text-muted);text-transform:none;font-size:11px;letter-spacing:0;">(cuisines — used when searching Dining)</span></h3>
       <input type="text" id="cuisine-search" placeholder="Search cuisines…" style="margin-bottom:12px;" oninput="filterCuisines(this.value)" />
       <div class="chips" id="cuisine-chips">
         <div class="chip" data-value="Italian">🍝 Italian</div>
@@ -119,6 +119,61 @@
           <input type="text" id="cuisine-custom" placeholder="e.g. Oaxacan, Georgian…" style="flex:1;" />
           <button class="btn btn-outline" type="button" onclick="addCustomCuisine()">Add</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Bars & drink preferences -->
+    <div class="profile-section">
+      <h3>Bars & drink preferences <span style="font-weight:400;color:var(--text-muted);text-transform:none;font-size:11px;letter-spacing:0;">(used when searching Bars & drinks)</span></h3>
+      <div class="chips" id="drink-chips">
+        <div class="chip" data-value="Cocktail bars">🍸 Cocktail bars</div>
+        <div class="chip" data-value="Wine bars">🍷 Wine bars</div>
+        <div class="chip" data-value="Natural wine">🫒 Natural wine</div>
+        <div class="chip" data-value="Craft beer & taprooms">🍺 Craft beer & taprooms</div>
+        <div class="chip" data-value="Whiskey bars">🥃 Whiskey bars</div>
+        <div class="chip" data-value="Mezcal & tequila">🌵 Mezcal & tequila</div>
+        <div class="chip" data-value="Champagne bars">🫧 Champagne bars</div>
+        <div class="chip" data-value="Sake bars">🍶 Sake bars</div>
+        <div class="chip" data-value="Rooftop bars">🌇 Rooftop bars</div>
+        <div class="chip" data-value="Dive bars">🏠 Dive bars</div>
+        <div class="chip" data-value="Sports bars">🏈 Sports bars</div>
+        <div class="chip" data-value="Live music">🎸 Live music</div>
+      </div>
+    </div>
+
+    <!-- Coffee & Tea preferences -->
+    <div class="profile-section">
+      <h3>Coffee & Tea preferences <span style="font-weight:400;color:var(--text-muted);text-transform:none;font-size:11px;letter-spacing:0;">(used when searching Coffee & Tea)</span></h3>
+      <div class="chips" id="coffee-chips">
+        <div class="chip" data-value="Espresso-based">☕ Espresso-based</div>
+        <div class="chip" data-value="Pour-over & filter">Pour-over & filter</div>
+        <div class="chip" data-value="Cold brew">Cold brew</div>
+        <div class="chip" data-value="Iced coffee">Iced coffee</div>
+        <div class="chip" data-value="Matcha">🍵 Matcha</div>
+        <div class="chip" data-value="Bubble tea">🧋 Bubble tea</div>
+        <div class="chip" data-value="Chai">Chai</div>
+        <div class="chip" data-value="Specialty tea">🫖 Specialty tea</div>
+        <div class="chip" data-value="Good pastry selection">🥐 Good pastry selection</div>
+        <div class="chip" data-value="Work-friendly & WiFi">💻 Work-friendly & WiFi</div>
+        <div class="chip" data-value="Cozy & quiet">Cozy & quiet</div>
+      </div>
+    </div>
+
+    <!-- Bakery & Dessert preferences -->
+    <div class="profile-section">
+      <h3>Bakery & Dessert preferences <span style="font-weight:400;color:var(--text-muted);text-transform:none;font-size:11px;letter-spacing:0;">(used when searching Bakery & Desserts)</span></h3>
+      <div class="chips" id="bakery-chips">
+        <div class="chip" data-value="Croissants & pastries">🥐 Croissants & pastries</div>
+        <div class="chip" data-value="Artisan bread">🍞 Artisan bread</div>
+        <div class="chip" data-value="Donuts">🍩 Donuts</div>
+        <div class="chip" data-value="Custom cakes">🎂 Custom cakes</div>
+        <div class="chip" data-value="Ice cream & gelato">🍦 Ice cream & gelato</div>
+        <div class="chip" data-value="Cupcakes">🧁 Cupcakes</div>
+        <div class="chip" data-value="Cookies">🍪 Cookies</div>
+        <div class="chip" data-value="Macarons">Macarons</div>
+        <div class="chip" data-value="Fruit tarts">🫐 Fruit tarts</div>
+        <div class="chip" data-value="Vegan options">🌱 Vegan options</div>
+        <div class="chip" data-value="Gluten-free options">🌾 Gluten-free options</div>
       </div>
     </div>
 
@@ -241,8 +296,11 @@
         renderNoteTags();
         partySize = user.default_party_size || 2;
         document.getElementById('party-count').textContent = partySize;
-        setSelected('diet-chips', user.dietary_restrictions);
-        setSelected('cuisine-chips', user.cuisine_preferences);
+        setSelected('diet-chips', user.dietary_restrictions || []);
+        setSelected('cuisine-chips', user.cuisine_preferences || []);
+        setSelected('drink-chips', user.drink_preferences || []);
+        setSelected('coffee-chips', user.coffee_preferences || []);
+        setSelected('bakery-chips', user.bakery_preferences || []);
       } catch (err) {
         if (err.message.includes('token')) logout();
       }
@@ -262,6 +320,9 @@
             dietary_restrictions: getSelected('diet-chips'),
             dietary_notes: dietaryNoteTags,
             cuisine_preferences: getSelected('cuisine-chips'),
+            drink_preferences: getSelected('drink-chips'),
+            coffee_preferences: getSelected('coffee-chips'),
+            bakery_preferences: getSelected('bakery-chips'),
             default_party_size: partySize
           })
         });

@@ -18,7 +18,8 @@ router.get('/profile', requireAuth, async (req, res) => {
 
 router.put('/profile', requireAuth, async (req, res) => {
   try {
-    const { name, dietary_restrictions, dietary_notes, cuisine_preferences, default_party_size } = req.body;
+    const { name, dietary_restrictions, dietary_notes, cuisine_preferences, default_party_size,
+            drink_preferences, coffee_preferences, bakery_preferences } = req.body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
@@ -26,6 +27,9 @@ router.put('/profile', requireAuth, async (req, res) => {
     if (dietary_notes !== undefined) updates.dietary_notes = dietary_notes;
     if (cuisine_preferences !== undefined) updates.cuisine_preferences = cuisine_preferences;
     if (default_party_size !== undefined) updates.default_party_size = default_party_size;
+    if (drink_preferences !== undefined) updates.drink_preferences = drink_preferences;
+    if (coffee_preferences !== undefined) updates.coffee_preferences = coffee_preferences;
+    if (bakery_preferences !== undefined) updates.bakery_preferences = bakery_preferences;
 
     const updated = await db.updateUser(req.userId, updates);
     if (!updated) return res.status(404).json({ error: 'User not found' });
