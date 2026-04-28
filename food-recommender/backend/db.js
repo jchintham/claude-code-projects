@@ -67,7 +67,7 @@ const db = {
     if (existing.length) {
       const rows = check(await client
         .from('visited_restaurants')
-        .update({ ...payload, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq('user_id', userId)
         .eq('place_id', place_id)
         .select());
