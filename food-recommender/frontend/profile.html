@@ -139,6 +139,13 @@
         <div class="chip" data-value="Sports bars">🏈 Sports bars</div>
         <div class="chip" data-value="Live music">🎸 Live music</div>
       </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Don't see it? Add it:</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="drink-custom" placeholder="e.g. Jazz bars, Beer gardens…" style="flex:1;" />
+          <button class="btn btn-outline" type="button" onclick="addCustomChip('drink-chips','drink-custom')">Add</button>
+        </div>
+      </div>
     </div>
 
     <!-- Coffee & Tea preferences -->
@@ -157,6 +164,13 @@
         <div class="chip" data-value="Work-friendly & WiFi">💻 Work-friendly & WiFi</div>
         <div class="chip" data-value="Cozy & quiet">Cozy & quiet</div>
       </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Don't see it? Add it:</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="coffee-custom" placeholder="e.g. Oat milk options, Nitro cold brew…" style="flex:1;" />
+          <button class="btn btn-outline" type="button" onclick="addCustomChip('coffee-chips','coffee-custom')">Add</button>
+        </div>
+      </div>
     </div>
 
     <!-- Bakery & Dessert preferences -->
@@ -174,6 +188,13 @@
         <div class="chip" data-value="Fruit tarts">🫐 Fruit tarts</div>
         <div class="chip" data-value="Vegan options">🌱 Vegan options</div>
         <div class="chip" data-value="Gluten-free options">🌾 Gluten-free options</div>
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Don't see it? Add it:</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="bakery-custom" placeholder="e.g. Mochi, Churros…" style="flex:1;" />
+          <button class="btn btn-outline" type="button" onclick="addCustomChip('bakery-chips','bakery-custom')">Add</button>
+        </div>
       </div>
     </div>
 
@@ -220,6 +241,25 @@
       }
       input.value = '';
       filterCuisines('');
+    }
+
+    function addCustomChip(chipsId, inputId) {
+      const input = document.getElementById(inputId);
+      const val = input.value.trim();
+      if (!val) return;
+      const existing = [...document.querySelectorAll(`#${chipsId} .chip`)]
+        .find(c => c.dataset.value.toLowerCase() === val.toLowerCase());
+      if (existing) {
+        existing.classList.add('selected');
+      } else {
+        const chip = document.createElement('div');
+        chip.className = 'chip selected';
+        chip.dataset.value = val;
+        chip.textContent = val;
+        chip.addEventListener('click', () => chip.classList.toggle('selected'));
+        document.getElementById(chipsId).appendChild(chip);
+      }
+      input.value = '';
     }
 
     function getSelected(id) {
