@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body class="auth-page">
-  <div class="auth-card" style="max-width: 500px;">
+  <div class="auth-card" style="max-width: 520px;">
     <div class="brand">
       <div class="brand-icon">🍴</div>
       <h1>Crave<span>.</span></h1>
@@ -17,6 +17,7 @@
       <div class="step-dot active" id="dot-0"></div>
       <div class="step-dot" id="dot-1"></div>
       <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
     </div>
 
     <!-- Step 1: Account -->
@@ -70,18 +71,18 @@
         <div style="font-size:12px;color:var(--text-muted);margin-top:5px;">Press Enter after each preference to add it as a tag.</div>
       </div>
 
-      <div style="margin-top: 20px; display: flex; gap: 10px;">
+      <div style="margin-top:20px;display:flex;gap:10px;">
         <button class="btn btn-outline" onclick="prevStep()">Back</button>
         <button class="btn btn-primary" onclick="nextStep()">Continue</button>
       </div>
     </div>
 
-    <!-- Step 3: Cuisine preferences -->
+    <!-- Step 3: Dining preferences -->
     <div class="step" id="step-2">
       <h2>What cuisines do you love?</h2>
-      <p class="subtitle">Select favourites or search and type to add more.</p>
+      <p class="subtitle">Select favourites or type to add more.</p>
 
-      <input type="text" id="cuisine-search" placeholder="Search cuisines…" style="margin-bottom:12px;" oninput="filterCuisines(this.value)" />
+      <input type="text" id="cuisine-search" placeholder="Search cuisines…" style="margin-bottom:12px;" oninput="filterChips('cuisine-chips', this.value)" />
 
       <div class="chips" id="cuisine-chips">
         <div class="chip" data-value="Italian">🍝 Italian</div>
@@ -119,11 +120,89 @@
         <label for="cuisine-custom">Don't see your cuisine? Add it:</label>
         <div style="display:flex;gap:8px;">
           <input type="text" id="cuisine-custom" placeholder="e.g. Oaxacan, Georgian…" style="flex:1;" />
-          <button class="btn btn-outline" type="button" onclick="addCustomCuisine()">Add</button>
+          <button class="btn btn-outline" type="button" onclick="addCustomChip('cuisine-chips','cuisine-custom')">Add</button>
         </div>
       </div>
 
-      <div style="margin-top: 20px; display: flex; gap: 10px;">
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="prevStep()">Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Bars, Coffee & Tea, Bakery preferences -->
+    <div class="step" id="step-3">
+      <h2>Other preferences</h2>
+      <p class="subtitle">All optional — skip anything that doesn't apply to you.</p>
+
+      <!-- Bars -->
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:600;font-size:14px;margin-bottom:8px;">🍸 Bars & Drinks</div>
+        <div class="chips" id="drink-chips">
+          <div class="chip" data-value="Cocktail bars">🍸 Cocktail bars</div>
+          <div class="chip" data-value="Wine bars">🍷 Wine bars</div>
+          <div class="chip" data-value="Natural wine">🫒 Natural wine</div>
+          <div class="chip" data-value="Craft beer & taprooms">🍺 Craft beer & taprooms</div>
+          <div class="chip" data-value="Whiskey bars">🥃 Whiskey bars</div>
+          <div class="chip" data-value="Mezcal & tequila">🌵 Mezcal & tequila</div>
+          <div class="chip" data-value="Champagne bars">🫧 Champagne bars</div>
+          <div class="chip" data-value="Sake bars">🍶 Sake bars</div>
+          <div class="chip" data-value="Rooftop bars">🌇 Rooftop bars</div>
+          <div class="chip" data-value="Dive bars">🏠 Dive bars</div>
+          <div class="chip" data-value="Sports bars">🏈 Sports bars</div>
+          <div class="chip" data-value="Live music">🎸 Live music</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="drink-custom" placeholder="e.g. Jazz bars, Beer gardens…" style="flex:1;font-size:13px;" />
+          <button class="btn btn-outline btn-sm" type="button" onclick="addCustomChip('drink-chips','drink-custom')">Add</button>
+        </div>
+      </div>
+
+      <!-- Coffee & Tea -->
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:600;font-size:14px;margin-bottom:8px;">☕ Coffee & Tea</div>
+        <div class="chips" id="coffee-chips">
+          <div class="chip" data-value="Espresso-based">☕ Espresso-based</div>
+          <div class="chip" data-value="Pour-over & filter">Pour-over & filter</div>
+          <div class="chip" data-value="Cold brew">Cold brew</div>
+          <div class="chip" data-value="Iced coffee">Iced coffee</div>
+          <div class="chip" data-value="Matcha">🍵 Matcha</div>
+          <div class="chip" data-value="Bubble tea">🧋 Bubble tea</div>
+          <div class="chip" data-value="Chai">Chai</div>
+          <div class="chip" data-value="Specialty tea">🫖 Specialty tea</div>
+          <div class="chip" data-value="Good pastry selection">🥐 Good pastry selection</div>
+          <div class="chip" data-value="Work-friendly & WiFi">💻 Work-friendly & WiFi</div>
+          <div class="chip" data-value="Cozy & quiet">Cozy & quiet</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="coffee-custom" placeholder="e.g. Oat milk options, Nitro cold brew…" style="flex:1;font-size:13px;" />
+          <button class="btn btn-outline btn-sm" type="button" onclick="addCustomChip('coffee-chips','coffee-custom')">Add</button>
+        </div>
+      </div>
+
+      <!-- Bakery & Desserts -->
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:600;font-size:14px;margin-bottom:8px;">🧁 Bakery & Desserts</div>
+        <div class="chips" id="bakery-chips">
+          <div class="chip" data-value="Croissants & pastries">🥐 Croissants & pastries</div>
+          <div class="chip" data-value="Artisan bread">🍞 Artisan bread</div>
+          <div class="chip" data-value="Donuts">🍩 Donuts</div>
+          <div class="chip" data-value="Custom cakes">🎂 Custom cakes</div>
+          <div class="chip" data-value="Ice cream & gelato">🍦 Ice cream & gelato</div>
+          <div class="chip" data-value="Cupcakes">🧁 Cupcakes</div>
+          <div class="chip" data-value="Cookies">🍪 Cookies</div>
+          <div class="chip" data-value="Macarons">Macarons</div>
+          <div class="chip" data-value="Fruit tarts">🫐 Fruit tarts</div>
+          <div class="chip" data-value="Vegan options">🌱 Vegan options</div>
+          <div class="chip" data-value="Gluten-free options">🌾 Gluten-free options</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input type="text" id="bakery-custom" placeholder="e.g. Mochi, Churros…" style="flex:1;font-size:13px;" />
+          <button class="btn btn-outline btn-sm" type="button" onclick="addCustomChip('bakery-chips','bakery-custom')">Add</button>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;display:flex;gap:10px;">
         <button class="btn btn-outline" onclick="prevStep()">Back</button>
         <button class="btn btn-primary" id="finish-btn" onclick="finish()">Finish setup</button>
       </div>
@@ -140,7 +219,7 @@
     let userName = null;
 
     // Chip toggle
-    document.querySelectorAll('#diet-chips .chip, #cuisine-chips .chip').forEach(chip => {
+    document.querySelectorAll('.chip').forEach(chip => {
       chip.addEventListener('click', () => chip.classList.toggle('selected'));
     });
 
@@ -172,35 +251,30 @@
       if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); addNoteTag(); }
     });
 
-    function filterCuisines(query) {
+    function filterChips(containerId, query) {
       const q = query.toLowerCase();
-      document.querySelectorAll('#cuisine-chips .chip').forEach(chip => {
-        const match = chip.dataset.value.toLowerCase().includes(q);
-        chip.style.display = match ? '' : 'none';
+      document.querySelectorAll(`#${containerId} .chip`).forEach(chip => {
+        chip.style.display = chip.dataset.value.toLowerCase().includes(q) ? '' : 'none';
       });
     }
 
-    function addCustomCuisine() {
-      const input = document.getElementById('cuisine-custom');
+    function addCustomChip(chipsId, inputId) {
+      const input = document.getElementById(inputId);
       const val = input.value.trim();
       if (!val) return;
-
-      // Don't add duplicates
-      const existing = [...document.querySelectorAll('#cuisine-chips .chip')]
+      const existing = [...document.querySelectorAll(`#${chipsId} .chip`)]
         .find(c => c.dataset.value.toLowerCase() === val.toLowerCase());
       if (existing) {
         existing.classList.add('selected');
-        existing.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else {
         const chip = document.createElement('div');
         chip.className = 'chip selected';
         chip.dataset.value = val;
         chip.textContent = val;
         chip.addEventListener('click', () => chip.classList.toggle('selected'));
-        document.getElementById('cuisine-chips').appendChild(chip);
+        document.getElementById(chipsId).appendChild(chip);
       }
       input.value = '';
-      filterCuisines('');
     }
 
     function getSelected(containerId) {
@@ -216,6 +290,7 @@
         if (i === n) d.classList.add('active');
       });
       currentStep = n;
+      window.scrollTo(0, 0);
     }
 
     function nextStep() { showStep(currentStep + 1); }
@@ -264,9 +339,12 @@
         await apiFetch('/users/profile', {
           method: 'PUT',
           body: JSON.stringify({
-            dietary_restrictions: getSelected('diet-chips'),
-            dietary_notes: dietaryNoteTags,
-            cuisine_preferences: getSelected('cuisine-chips')
+            dietary_restrictions:  getSelected('diet-chips'),
+            dietary_notes:         dietaryNoteTags,
+            cuisine_preferences:   getSelected('cuisine-chips'),
+            drink_preferences:     getSelected('drink-chips'),
+            coffee_preferences:    getSelected('coffee-chips'),
+            bakery_preferences:    getSelected('bakery-chips')
           })
         });
         setSession(authToken, userName);
