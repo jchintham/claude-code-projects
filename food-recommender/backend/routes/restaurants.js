@@ -58,28 +58,48 @@ router.post('/recommend', requireAuth, async (req, res) => {
     };
     const activeCategoryPrefs = categoryPrefsMap[category] || userProfile.cuisine_preferences;
 
-    let prefBias = '';
-    if (cravingIsVague && activeCategoryPrefs?.length > 0) {
-      const prefs = [...activeCategoryPrefs];
-      prefBias = prefs[Math.floor(Math.random() * prefs.length)];
-    }
-
     // When craving is specific, use it as the sole search term so Google focuses
     // on the dish/concept rather than being diluted by meal_type or category suffix
-    const searchQuery = cravingIsVague
-      ? ([prefBias, meal_type].filter(Boolean).join(' ') || 'restaurant')
-      : searchCraving;
+    let candidates;
+    if (!cravingIsVague) {
+      const results = await searchRestaurants({
+        lat: coords.lat, lng: coords.lng,
+        query: searchCraving, radius, category,
+        cravingSpecific: true
+      });
+      candidates = results;
+    } else if (activeCategoryPrefs?.length > 0) {
+      // Pick up to 3 distinct preferences and run parallel searches so the
+      // results reflect a mix of the user's tastes, not just one cuisine
+      const pool = [...activeCategoryPrefs];
+      const selected = [];
+      const count = Math.min(3, pool.length);
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(Math.random() * pool.length);
+        selected.push(pool.splice(idx, 1)[0]);
+      }
+      const batches = await Promise.all(selected.map(pref => {
+        const q = [pref, meal_type].filter(Boolean).join(' ') || 'restaurant';
+        return searchRestaurants({ lat: coords.lat, lng: coords.lng, query: q, radius, category, cravingSpecific: false });
+      }));
+      // Merge and dedup by place_id
+      const seen = new Set();
+      candidates = batches.flat().filter(p => {
+        if (seen.has(p.place_id)) return false;
+        seen.add(p.place_id);
+        return true;
+      });
+    } else {
+      // No preferences — generic search
+      const q = meal_type || 'restaurant';
+      candidates = await searchRestaurants({ lat: coords.lat, lng: coords.lng, query: q, radius, category, cravingSpecific: false });
+    }
 
-    const candidates = await searchRestaurants({
-      lat: coords.lat, lng: coords.lng,
-      query: searchQuery, radius, category,
-      cravingSpecific: !cravingIsVague
-    });
     if (!candidates.length) {
       return res.json({ restaurants: [] });
     }
 
-    // Shuffle candidates so repeated searches return varied results
+    // Shuffle so results feel varied across sessions
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
