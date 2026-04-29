@@ -918,20 +918,6 @@
 
     // ── Render results ──
     function buildCard(r, i) {
-      const PLATFORM_LOGOS = {
-        opentable: `<img src="https://www.google.com/s2/favicons?sz=32&domain=opentable.com" width="20" height="20" alt="OpenTable" style="display:block;" />`,
-        resy:      `<img src="https://www.google.com/s2/favicons?sz=32&domain=resy.com"      width="20" height="20" alt="Resy"      style="display:block;" />`,
-        tock:      `<img src="https://www.google.com/s2/favicons?sz=32&domain=exploretock.com" width="20" height="20" alt="Tock" style="display:block;" />`,
-        yelp:      `<img src="https://www.google.com/s2/favicons?sz=32&domain=yelp.com"      width="20" height="20" alt="Yelp"      style="display:block;" />`
-      };
-      const reservationBtns = (r.reservations || [])
-        .map(res => {
-          const logo = PLATFORM_LOGOS[res.type];
-          return logo
-            ? `<a href="${res.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" title="${res.label}" style="padding:6px 10px;line-height:1;">${logo}</a>`
-            : `<a href="${res.url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">📅 ${res.label}</a>`;
-        })
-        .join('');
       const phoneEl = r.phone
         ? `<span style="font-size:13px;color:var(--text-muted);align-self:center;">📞 <a href="tel:${r.phone}" style="color:var(--orange);text-decoration:none;">${r.phone}</a></span>`
         : '';
@@ -997,7 +983,6 @@
           <div class="card-actions">
             ${r.website ? `<a href="${r.website}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">🍽️ View menu</a>` : ''}
             <a href="${r.google_maps_url}" target="_blank" rel="noopener" class="btn btn-outline btn-sm" title="Google Maps" style="padding:6px 10px;line-height:1;"><img src="https://www.google.com/s2/favicons?sz=32&domain=maps.google.com" width="20" height="20" alt="Google Maps" style="display:block;" /></a>
-            ${reservationBtns}
             ${phoneEl}
             <span id="visited-action-${i}">
               ${visitedPlaceIds.has(r.place_id)

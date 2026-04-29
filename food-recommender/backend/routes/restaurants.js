@@ -4,7 +4,7 @@ const db = require('../db');
 const { geocodeAddress, searchRestaurants, getPlaceDetails, getPhotoUrl } = require('../services/googlePlaces');
 const { matchYelpBusiness, getReviews } = require('../services/yelp');
 const { summarizeAndScore } = require('../services/claude');
-const { getOpenTableLink, getResyLink, getGoogleMapsLink } = require('../services/reservations');
+const { getGoogleMapsLink } = require('../services/reservations');
 const { fetchMenuText } = require('../services/menuScraper');
 const { searchYouTubeVideo } = require('../services/youtube');
 
@@ -17,16 +17,6 @@ const RADIUS_MAP = {
   under_50:  50000  // Google Places API hard-caps at 50,000m (~31mi)
 };
 
-function detectReservationPlatform(reservationsUrl, website) {
-  const urls = [reservationsUrl, website].filter(Boolean).map(u => u.toLowerCase());
-  for (const url of urls) {
-    if (url.includes('opentable.com')) return 'opentable';
-    if (url.includes('resy.com')) return 'resy';
-    if (url.includes('tock.com')) return 'tock';
-    if (url.includes('yelp.com/reservations')) return 'yelp';
-  }
-  return null;
-}
 
 router.post('/recommend', requireAuth, async (req, res) => {
   try {
@@ -135,22 +125,8 @@ router.post('/recommend', requireAuth, async (req, res) => {
         const session = { meal_type, vibe, craving, party_size: seats, category: category || 'dining' };
         const ai = await summarizeAndScore(restaurantData, session, userProfile, visitedHistory, menuText);
 
-        // Extract city for reservation links
         const cityMatch = (details.formatted_address || '').match(/,\s*([^,]+),\s*[A-Z]{2}/);
         const city = cityMatch?.[1]?.trim() || '';
-
-        // Check if restaurant's own website is a booking platform (rare but possible)
-        const platform = detectReservationPlatform(null, details.website);
-
-        // Always provide OpenTable + Resy search links; if website IS a platform, surface it first
-        const reservations = [];
-        if (platform === 'tock') {
-          reservations.push({ type: 'tock', url: details.website, label: 'Reserve on Tock' });
-        } else if (platform === 'yelp') {
-          reservations.push({ type: 'yelp', url: details.website, label: 'Reserve on Yelp' });
-        }
-        reservations.push({ type: 'opentable', url: getOpenTableLink(details.name, city, date_time, seats), label: 'OpenTable' });
-        reservations.push({ type: 'resy', url: getResyLink(details.name, city, date, seats), label: 'Resy' });
 
         const googlePhotos = (details.photos || []).slice(0, 10).map(p => getPhotoUrl(p.photo_reference));
         const yelpPhotos = (yelpBiz?.photos || []).filter(Boolean);
@@ -180,8 +156,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
           dietary_dishes: ai.dietary_dishes || [],
           dietary_notes: ai.dietary_notes || null,
           category: category || 'dining',
-          criteria_unmet: ai.criteria_unmet || [],
-          reservations
+          criteria_unmet: ai.criteria_unmet || []
         };
       } catch (err) {
         console.error(`Skipping ${place.name}:`, err.message);
