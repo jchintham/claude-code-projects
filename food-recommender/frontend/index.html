@@ -56,6 +56,7 @@
           })
         });
         setSession(data.token, data.name);
+        sessionStorage.clear();
         window.location.href = data.isNewUser ? '/profile.html?setup=1' : '/recommend.html';
       } catch (err) {
         errorEl.textContent = err.message;

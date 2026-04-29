@@ -348,6 +348,7 @@
           })
         });
         setSession(authToken, userName);
+        sessionStorage.clear();
         window.location.href = '/recommend.html';
       } catch (err) {
         errorEl.textContent = err.message;
