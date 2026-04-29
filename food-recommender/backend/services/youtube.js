@@ -9,24 +9,32 @@ const GENERIC_WORDS = new Set([
   'food', 'dining', 'eat', 'eats', 'best', 'great', 'review', 'experience'
 ]);
 
-// Returns true only if a distinctive part of the restaurant name appears in the video title
-function isRelevant(item, restaurantName) {
+// Returns true only if the video title strongly matches the restaurant name AND city
+function isRelevant(item, restaurantName, city) {
   const title = (item.snippet?.title || '').toLowerCase();
+  const channel = (item.snippet?.channelTitle || '').toLowerCase();
   if (!title) return false;
 
-  // Extract words that are specific to this restaurant (not generic cuisine/location terms)
+  // Extract words specific to this restaurant (not generic cuisine/location terms)
   const distinctiveWords = restaurantName.toLowerCase()
     .split(/[\s\-&']+/)
     .filter(w => w.length > 2 && !GENERIC_WORDS.has(w));
 
-  if (distinctiveWords.length === 0) {
-    // All words are generic — fall back to requiring all non-trivial words to match
-    const allWords = restaurantName.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-    return allWords.length > 0 && allWords.every(w => title.includes(w));
+  // ALL distinctive words must appear in the title (not just one)
+  const nameMatch = distinctiveWords.length === 0
+    ? restaurantName.toLowerCase().split(/\s+/).filter(w => w.length > 2).every(w => title.includes(w))
+    : distinctiveWords.every(w => title.includes(w));
+
+  if (!nameMatch) return false;
+
+  // City must also appear in the title or channel name to rule out same-named
+  // places in other cities (e.g. a "Sando Table" video from Asheville)
+  if (city) {
+    const cityLower = city.toLowerCase();
+    if (!title.includes(cityLower) && !channel.includes(cityLower)) return false;
   }
 
-  // At least one distinctive word must appear in the title
-  return distinctiveWords.some(w => title.includes(w));
+  return true;
 }
 
 async function searchYouTubeVideo(restaurantName, city) {
@@ -50,7 +58,7 @@ async function searchYouTubeVideo(restaurantName, city) {
 
     const items = response.data.items || [];
     for (const item of items) {
-      if (!isRelevant(item, restaurantName)) continue;
+      if (!isRelevant(item, restaurantName, city)) continue;
       const videoId = item.id?.videoId;
       if (!videoId) continue;
       return {
