@@ -73,7 +73,7 @@ router.post('/recommend', requireAuth, async (req, res) => {
       // results reflect a mix of the user's tastes, not just one cuisine
       const pool = [...activeCategoryPrefs];
       const selected = [];
-      const count = Math.min(3, pool.length);
+      const count = Math.min(5, pool.length);
       for (let i = 0; i < count; i++) {
         const idx = Math.floor(Math.random() * pool.length);
         selected.push(pool.splice(idx, 1)[0]);
