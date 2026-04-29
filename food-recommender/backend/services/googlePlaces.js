@@ -18,11 +18,14 @@ const CATEGORY_TYPE = {
   bakery: { type: 'bakery',     suffix: 'bakery'     }
 };
 
-async function searchRestaurants({ lat, lng, query, radius, category }) {
+async function searchRestaurants({ lat, lng, query, radius, category, cravingSpecific = false }) {
   const { type, suffix } = CATEGORY_TYPE[category] || CATEGORY_TYPE.dining;
+  // When craving is specific (e.g. "katsu"), use it as-is so Google can match
+  // on the dish name. Adding a suffix like "restaurant" dilutes the signal.
+  const searchText = cravingSpecific ? query : `${query} ${suffix}`.trim();
   const res = await axios.get(`${BASE}/textsearch/json`, {
     params: {
-      query: `${query} ${suffix}`.trim(),
+      query: searchText,
       location: `${lat},${lng}`,
       radius: radius || 5000,
       type,

@@ -74,9 +74,17 @@ router.post('/recommend', requireAuth, async (req, res) => {
       prefBias = prefs[Math.floor(Math.random() * prefs.length)];
     }
 
-    const searchQuery = [searchCraving || prefBias, meal_type].filter(Boolean).join(' ') || 'restaurant';
+    // When craving is specific, use it as the sole search term so Google focuses
+    // on the dish/concept rather than being diluted by meal_type or category suffix
+    const searchQuery = cravingIsVague
+      ? ([prefBias, meal_type].filter(Boolean).join(' ') || 'restaurant')
+      : searchCraving;
 
-    const candidates = await searchRestaurants({ lat: coords.lat, lng: coords.lng, query: searchQuery, radius, category });
+    const candidates = await searchRestaurants({
+      lat: coords.lat, lng: coords.lng,
+      query: searchQuery, radius, category,
+      cravingSpecific: !cravingIsVague
+    });
     if (!candidates.length) {
       return res.json({ restaurants: [] });
     }
