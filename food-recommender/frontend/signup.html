@@ -349,7 +349,6 @@
         });
         setSession(authToken, userName);
         sessionStorage.clear();
-        localStorage.removeItem('fr_last_recs');
         window.location.href = '/recommend.html';
       } catch (err) {
         errorEl.textContent = err.message;

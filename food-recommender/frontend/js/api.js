@@ -18,6 +18,16 @@ function getUserName() {
   return localStorage.getItem('fr_name') || 'there';
 }
 
+// Decode JWT payload (no verification) to get a stable user ID
+function getUserId() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return String(payload.userId || payload.sub || payload.id || '');
+  } catch { return null; }
+}
+
 async function apiFetch(path, options = {}) {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {

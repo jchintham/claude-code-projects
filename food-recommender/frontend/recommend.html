@@ -432,8 +432,9 @@
       const raw = localStorage.getItem('fr_last_recs');
       if (!raw) return;
       try {
-        const { saved_at, restaurants } = JSON.parse(raw);
+        const { saved_at, restaurants, userId } = JSON.parse(raw);
         if (!restaurants?.length) return;
+        if (userId && userId !== getUserId()) return;
         if ((Date.now() - new Date(saved_at)) / 3600000 < 1) return;
         const list = document.getElementById('followup-list');
         list.innerHTML = restaurants.map((r, i) => `
@@ -497,15 +498,16 @@
 
     // ── Session results persistence ──
     function saveResultsToSession(restaurants, title, subtitle) {
-      sessionStorage.setItem('fr_session_results', JSON.stringify({ restaurants, title, subtitle }));
+      sessionStorage.setItem('fr_session_results', JSON.stringify({ restaurants, title, subtitle, userId: getUserId() }));
     }
 
     function restoreSessionResults() {
       const raw = sessionStorage.getItem('fr_session_results');
       if (!raw) return false;
       try {
-        const { restaurants, title, subtitle } = JSON.parse(raw);
+        const { restaurants, title, subtitle, userId } = JSON.parse(raw);
         if (!restaurants?.length) return false;
+        if (userId && userId !== getUserId()) return false;
         document.getElementById('results-title').textContent = title || 'Here are your picks';
         document.getElementById('results-subtitle').textContent = subtitle || '';
         renderResults(restaurants);
@@ -734,6 +736,7 @@
         if (data.restaurants?.length) {
           localStorage.setItem('fr_last_recs', JSON.stringify({
             saved_at: new Date().toISOString(),
+            userId: getUserId(),
             restaurants: data.restaurants.map(r => ({ place_id: r.place_id, name: r.name, address: r.address, category: r.category }))
           }));
           sessionStorage.setItem('fr_followup_done', '1');
