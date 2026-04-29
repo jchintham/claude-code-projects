@@ -14,7 +14,7 @@ const RADIUS_MAP = {
   under_1:   1600,
   under_2_5: 4000,
   under_10:  16000,
-  under_50:  80000
+  under_50:  50000  // Google Places API hard-caps at 50,000m (~31mi)
 };
 
 function detectReservationPlatform(reservationsUrl, website) {
@@ -182,8 +182,20 @@ router.post('/recommend', requireAuth, async (req, res) => {
     }
 
     const enriched = await enrichWithLimit(candidates.slice(0, 20), 5);
-    const results = enriched.filter(Boolean).slice(0, 20);
-    res.json({ restaurants: results });
+    const valid = enriched.filter(Boolean);
+
+    // If user had a specific craving, sort so places that don't explicitly
+    // fail the craving come first (criteria_unmet doesn't mention the craving keyword)
+    if (!cravingIsVague && searchCraving) {
+      const kw = searchCraving.toLowerCase();
+      valid.sort((a, b) => {
+        const aFails = (a.criteria_unmet || []).some(c => c.toLowerCase().includes(kw));
+        const bFails = (b.criteria_unmet || []).some(c => c.toLowerCase().includes(kw));
+        return aFails - bFails;
+      });
+    }
+
+    res.json({ restaurants: valid.slice(0, 20) });
   } catch (err) {
     console.error('Recommend error:', err.message);
     res.status(500).json({ error: 'Failed to fetch recommendations. Please try again.' });
