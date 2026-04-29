@@ -144,7 +144,15 @@ router.post('/recommend', requireAuth, async (req, res) => {
         reservations.push({ type: 'opentable', url: getOpenTableLink(details.name, city, date_time, seats), label: 'OpenTable' });
         reservations.push({ type: 'resy', url: getResyLink(details.name, city, date, seats), label: 'Resy' });
 
-        const photos = (details.photos || []).slice(0, 5).map(p => getPhotoUrl(p.photo_reference));
+        const googlePhotos = (details.photos || []).slice(0, 10).map(p => getPhotoUrl(p.photo_reference));
+        const yelpPhotos = (yelpBiz?.photos || []).filter(Boolean);
+        const blended = [];
+        const g = [...googlePhotos], y = [...yelpPhotos];
+        while (blended.length < 10 && (g.length || y.length)) {
+          if (g.length) blended.push(g.shift());
+          if (blended.length < 10 && y.length) blended.push(y.shift());
+        }
+        const photos = blended;
 
         return {
           place_id: place.place_id,

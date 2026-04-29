@@ -797,6 +797,14 @@
     }
     function priceLabel(level) { return level ? '$'.repeat(level) : ''; }
 
+    // ── Horizontal scroll on photo strips via mouse wheel ──
+    document.addEventListener('wheel', (e) => {
+      const strip = e.target.closest('.photo-strip');
+      if (!strip) return;
+      e.preventDefault();
+      strip.scrollLeft += e.deltaY || e.deltaX;
+    }, { passive: false });
+
     // ── Visited tracking ──
     apiFetch('/visited').then(list => list.forEach(v => visitedPlaceIds.add(v.place_id))).catch(() => {});
 

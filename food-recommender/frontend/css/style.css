@@ -244,18 +244,30 @@ input::placeholder { color: var(--text-muted); opacity: 0.5; }
 
 .restaurant-card:hover { border-color: #3d3a36; box-shadow: var(--shadow-lg); }
 
-.photo-strip { display: flex; gap: 2px; height: 220px; overflow: hidden; }
+.photo-strip {
+  display: flex;
+  gap: 3px;
+  height: 200px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.photo-strip::-webkit-scrollbar { display: none; }
 
 .photo-strip img {
-  flex: 1;
+  flex-shrink: 0;
+  width: 180px;
+  height: 200px;
   object-fit: cover;
-  min-width: 0;
+  scroll-snap-align: start;
   cursor: pointer;
-  transition: flex 0.3s ease;
-  filter: brightness(0.85);
+  filter: brightness(0.88);
+  transition: filter 0.2s;
 }
-
-.photo-strip img:hover { flex: 2; filter: brightness(1); }
+.photo-strip img:hover { filter: brightness(1); }
 .photo-strip img:first-child { border-radius: var(--radius) 0 0 0; }
 .photo-strip img:last-child { border-radius: 0 var(--radius) 0 0; }
 
@@ -456,7 +468,8 @@ input::placeholder { color: var(--text-muted); opacity: 0.5; }
   .auth-card { padding: 28px 20px; }
   .page-content { padding: 20px 16px; }
   .option-grid { grid-template-columns: repeat(2, 1fr); }
-  .photo-strip { height: 160px; }
+  .photo-strip { height: 150px; }
+  .photo-strip img { width: 140px; height: 150px; }
   .card-actions { flex-direction: column; }
   .card-actions .btn { width: 100%; }
   .topbar { padding: 0 16px; }
