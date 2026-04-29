@@ -797,7 +797,12 @@
     }
     function priceLabel(level) { return level ? '$'.repeat(level) : ''; }
 
-    // ── Horizontal scroll on photo strips via mouse wheel ──
+    // ── Photo strip scrolling ──
+    function scrollPhotos(id, dir) {
+      const strip = document.getElementById(id);
+      if (strip) strip.scrollBy({ left: dir * 360, behavior: 'smooth' });
+    }
+
     document.addEventListener('wheel', (e) => {
       const strip = e.target.closest('.photo-strip');
       if (!strip) return;
@@ -950,8 +955,12 @@
       return `
       <div class="restaurant-card">
         ${r.photos?.length ? `
-          <div class="photo-strip">
-            ${r.photos.map(url => `<img src="${url}" alt="${r.name}" loading="lazy" onerror="this.style.display='none'" />`).join('')}
+          <div style="position:relative;">
+            <div class="photo-strip" id="ps-${i}">
+              ${r.photos.map(url => `<img src="${url}" alt="${r.name}" loading="lazy" onerror="this.style.display='none'" />`).join('')}
+            </div>
+            <button onclick="scrollPhotos('ps-${i}',1)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.55);border:none;color:#fff;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;backdrop-filter:blur(4px);">›</button>
+            <button onclick="scrollPhotos('ps-${i}',-1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.55);border:none;color:#fff;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;backdrop-filter:blur(4px);">‹</button>
           </div>` : `<div class="photo-placeholder">🍽️</div>`}
         <div class="card-body">
           <div class="card-header">
